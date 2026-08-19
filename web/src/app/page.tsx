@@ -10,7 +10,6 @@ type DailyEntry = {
   tier: Tier;
   id: string;
   editorialUrl: string | null;
-  visualUrl: string | null;
   problem: {
     name: string;
     rating: number;
@@ -37,7 +36,6 @@ async function getTodayProblems(): Promise<DailyEntry[]> {
       tier,
       id: found.id,
       editorialUrl: found.editorialUrl,
-      visualUrl: found.visualUrl,
       problem: found.problem,
     };
   });
