@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  discordId String   @unique
+  username  String
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  progress  UserProgress[]
+
+  @@map("users")
+}
+
+model Problem {
+  id            String         @id @default(cuid())
+  cfContestId   Int
+  cfIndex       String
+  name          String
+  rating        Int
+  tags          String[]
+  url           String
+  createdAt     DateTime       @default(now())
+  dailyProblems DailyProblem[]
+
+  @@unique([cfContestId, cfIndex])
+  @@map("problems")
+}
+
+model DailyProblem {
+  id            String         @id @default(cuid())
+  problemId     String
+  problem       Problem        @relation(fields: [problemId], references: [id])
+  tier          String
+  date          DateTime
+  editorialUrl  String?
+  visualUrl     String?
+  visualPrompt  String?
+  createdAt     DateTime @default(now())
+  progress      UserProgress[]
+
+  @@unique([tier, date])
+  @@index([tier, date])
+  @@map("daily_problems")
+}
+
+model UserProgress {
+  id              String       @id @default(cuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id])
+  dailyProblemId  String
+  dailyProblem    DailyProblem @relation(fields: [dailyProblemId], references: [id])
+  solvedAt        DateTime     @default(now())
+
+  @@unique([userId, dailyProblemId])
+  @@map("user_progress")
+}

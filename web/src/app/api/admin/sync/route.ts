@@ -1,0 +1,93 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { fetchAllProblems, problemUrl } from "@/lib/codeforces";
+import { TIERS, TIER_ORDER } from "@/lib/tiers";
+
+const DEDUP_WINDOW_DAYS = 90;
+
+export async function POST(req: NextRequest) {
+  const authHeader = req.headers.get("authorization");
+  if (authHeader !== `Bearer ${process.env.ADMIN_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const allProblems = await fetchAllProblems();
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const results: string[] = [];
+
+  for (const tier of TIER_ORDER) {
+    const { min, max } = TIERS[tier];
+    const candidates = allProblems.filter(
+      (p) => p.rating >= min && p.rating <= max
+    );
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - DEDUP_WINDOW_DAYS);
+
+    const recentProblemIds = (
+      await prisma.dailyProblem.findMany({
+        where: { tier, date: { gte: cutoff } },
+        select: { problemId: true },
+      })
+    ).map((dp) => dp.problemId);
+
+    const recentCfs = (
+      await prisma.problem.findMany({
+        where: { id: { in: recentProblemIds } },
+        select: { cfContestId: true, cfIndex: true },
+      })
+    ).map((p) => `${p.cfContestId}-${p.cfIndex}`);
+
+    const available = candidates.filter(
+      (p) => !recentCfs.includes(`${p.contestId}-${p.index}`)
+    );
+
+    if (available.length === 0) {
+      results.push(`${tier}: no available problems`);
+      continue;
+    }
+
+    const picked = available[Math.floor(Math.random() * available.length)];
+
+    const problem = await prisma.problem.upsert({
+      where: {
+        cfContestId_cfIndex: {
+          cfContestId: picked.contestId,
+          cfIndex: picked.index,
+        },
+      },
+      create: {
+        cfContestId: picked.contestId,
+        cfIndex: picked.index,
+        name: picked.name,
+        rating: picked.rating,
+        tags: picked.tags,
+        url: problemUrl(picked),
+      },
+      update: {},
+    });
+
+    const existingToday = await prisma.dailyProblem.findFirst({
+      where: { date: today, tier },
+    });
+
+    if (!existingToday) {
+      await prisma.dailyProblem.create({
+        data: {
+          problemId: problem.id,
+          tier,
+          date: today,
+          editorialUrl: `https://codeforces.com/blog/entry/${picked.contestId}`,
+        },
+      });
+      results.push(`${tier}: assigned "${picked.name}" (${picked.rating})`);
+    } else {
+      results.push(`${tier}: already assigned`);
+    }
+  }
+
+  return NextResponse.json({ results });
+}
