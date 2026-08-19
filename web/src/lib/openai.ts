@@ -12,7 +12,9 @@ export async function generateProblemVisual(
   rating: number
 ): Promise<{ url: string; prompt: string }> {
   const tagStr = tags.join(", ");
-  const prompt = `Clean minimal technical diagram illustrating algorithm concepts: ${tagStr}. Problem: "${problemName}" (difficulty ${rating}). Show abstract data structures and flow, professional educational style, dark navy background, no text or letters, geometric shapes, glowing accent colors cyan and magenta.`;
+  const prompt = `Educational algorithm diagram for a competitive programming problem called "${problemName}" with tags: ${tagStr}, difficulty rating: ${rating}.
+
+Create a clear step-by-step visual explanation of how this algorithm or data structure works. Use labeled boxes, arrows, and numbered steps. Show input → processing → output flow. Use a clean white/light background with dark text for readability. Include visual elements like arrays, trees, graphs, or stacks as appropriate for the algorithm type. Make it look like a textbook illustration that teaches the concept. No decorative elements — everything should serve an educational purpose.`;
 
   const response = await openai.images.generate({
     model: "gpt-image-1",

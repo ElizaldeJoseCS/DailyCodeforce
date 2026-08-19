@@ -39,7 +39,9 @@ async function generateProblemVisual(
   rating: number
 ): Promise<{ url: string; prompt: string }> {
   const tagStr = tags.join(", ");
-  const prompt = `Clean minimal technical diagram illustrating algorithm concepts: ${tagStr}. Problem: "${problemName}" (difficulty ${rating}). Show abstract data structures and flow, professional educational style, dark navy background, no text or letters, geometric shapes, glowing accent colors cyan and magenta.`;
+  const prompt = `Educational algorithm diagram for a competitive programming problem called "${problemName}" with tags: ${tagStr}, difficulty rating: ${rating}.
+
+Create a clear step-by-step visual explanation of how this algorithm or data structure works. Use labeled boxes, arrows, and numbered steps. Show input → processing → output flow. Use a clean white/light background with dark text for readability. Include visual elements like arrays, trees, graphs, or stacks as appropriate for the algorithm type. Make it look like a textbook illustration that teaches the concept. No decorative elements — everything should serve an educational purpose.`;
 
   const response = await openai.images.generate({
     model: "gpt-image-1",
@@ -74,11 +76,28 @@ async function generateProblemVisual(
 }
 
 async function generateVisuals() {
+  const todayOnly = process.argv.includes("--today");
+  const doClear = process.argv.includes("--clear");
+
+  if (doClear) {
+    await prisma.dailyProblem.updateMany({
+      data: { visualUrl: null, visualPrompt: null },
+    });
+    console.log("Cleared all visual data");
+  }
+
+  const where: any = { visualUrl: null };
+  if (todayOnly) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    where.date = today;
+  }
+
   const missing = await prisma.dailyProblem.findMany({
-    where: { visualUrl: null },
+    where,
     include: { problem: true },
     orderBy: { date: "desc" },
-    take: 10,
+    ...(todayOnly ? {} : { take: 10 }),
   });
 
   if (missing.length === 0) {
