@@ -1,12 +1,15 @@
 # DailyCodeforce
 
-Daily Codeforces problems for competitive programming practice. A new problem every day across four difficulty tiers, with AI-generated algorithm visualizations.
+Daily Codeforces problems for competitive programming practice. A new problem every day across four difficulty tiers, with AI-generated LeetCode-style editorials.
+
+**Live:** http://159.65.226.241
 
 ## Features
 
 - **4 daily problems** — Beginner (800–1200), Intermediate (1200–1600), Advanced (1600–2000), Expert (2000+)
-- **AI-generated visuals** — Algorithm concept illustrations for each problem via OpenAI GPT Image
-- **Problem archive** — Browse past daily problems, filter by tier
+- **AI editorials** — LeetCode-style solutions with intuition, approach, complexity analysis, and C++ code via GPT-4o
+- **Answer tab** — Editorials hidden until clicked, so you can attempt the problem first
+- **Problem archive** — Browse past daily problems, 30-day backfill
 - **Leaderboard** — Track progress and compete with others
 - **Discord bot** — Same functionality via slash commands (`/daily`, `/stats`, `/solve`, `/leaderboard`)
 - **90-day dedup** — Problems don't repeat within a rolling window
@@ -18,8 +21,8 @@ Daily Codeforces problems for competitive programming practice. A new problem ev
 | Frontend | Next.js 14, TypeScript, Tailwind CSS |
 | Database | PostgreSQL (via Docker) |
 | ORM | Prisma 7 with driver adapter |
+| Editorials | OpenAI GPT-4o |
 | Discord Bot | Go + DiscordGo |
-| AI Visuals | OpenAI GPT Image 1 |
 | Deployment | Docker Compose, Nginx |
 
 ## Quick Start
@@ -27,8 +30,8 @@ Daily Codeforces problems for competitive programming practice. A new problem ev
 ### Prerequisites
 
 - Node.js 20+
-- Go 1.23+
 - Docker + Docker Compose
+- Go 1.23+ (for Discord bot)
 
 ### Local Development
 
@@ -54,14 +57,20 @@ npx next dev
 
 Visit http://localhost:3000
 
-### Generate AI Visuals
+### Generate Editorials
 
 ```bash
 # Add your OpenAI API key to web/.env
 OPENAI_API_KEY="sk-..."
 
-# Generate visuals for problems missing them
-cd web && npx tsx scripts/generate-visuals.ts
+# Generate editorials for today's problems
+cd web && npx tsx scripts/generate-editorials.ts --today
+
+# Generate for all problems missing editorials
+npx tsx scripts/generate-editorials.ts
+
+# Clear and regenerate
+npx tsx scripts/generate-editorials.ts --clear --today
 ```
 
 ### Deploy with Docker
@@ -69,29 +78,70 @@ cd web && npx tsx scripts/generate-visuals.ts
 ```bash
 cp .env.example .env
 # Fill in .env with your values
-docker compose up -d
+docker compose up -d --build
+
+# Push schema changes
+docker run --rm --network dailycodeforce_default \
+  -e DATABASE_URL="postgresql://dailycodeforce:YOUR_PASSWORD@postgres:5432/dailycodeforce?schema=public" \
+  node:20-alpine sh -c "npm init -y && npm install prisma && npx prisma db push"
 ```
 
 ## Environment Variables
 
 See `.env.example` for all required variables:
 
-- `DATABASE_URL` — PostgreSQL connection string
-- `DISCORD_BOT_TOKEN` — Discord bot token
-- `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` — Discord OAuth
-- `OPENAI_API_KEY` — For AI-generated visuals
-- `GUILD_ID` / `NOTIFICATION_CHANNEL_ID` — Discord bot config
+| Variable | Description |
+|----------|-------------|
+| `DB_PASSWORD` | PostgreSQL password |
+| `NEXTAUTH_SECRET` | NextAuth session secret |
+| `NEXTAUTH_URL` | Site URL (e.g., `http://159.65.226.241`) |
+| `OPENAI_API_KEY` | OpenAI API key for editorials |
+| `DISCORD_BOT_TOKEN` | Discord bot token |
+| `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` | Discord OAuth |
+| `GUILD_ID` / `NOTIFICATION_CHANNEL_ID` | Discord bot config |
+| `ADMIN_SECRET` | Secret for admin sync endpoint |
 
 ## Project Structure
 
 ```
 dailycodeforce/
-├── web/                    # Next.js app
-│   ├── src/app/            # Pages and API routes
-│   ├── src/lib/            # Utilities, API clients
-│   ├── prisma/             # Database schema
-│   └── scripts/            # Cron scripts (fetch problems, generate visuals)
-├── bot/                    # Go Discord bot
-├── docker-compose.yml      # All services
-└── nginx.conf              # Reverse proxy
+├── web/                        # Next.js app
+│   ├── src/app/                # Pages and API routes
+│   │   ├── api/daily/          # GET today's problems
+│   │   ├── api/leaderboard/    # GET rankings
+│   │   ├── api/progress/       # POST mark solved
+│   │   ├── archive/            # Past problems
+│   │   ├── leaderboard/        # Rankings page
+│   │   └── problem/[id]/       # Problem detail + editorial
+│   ├── src/components/         # React components
+│   ├── src/lib/                # Utilities, API clients, editorial gen
+│   ├── prisma/                 # Database schema
+│   └── scripts/                # Cron scripts
+├── bot/                        # Go Discord bot
+├── docker-compose.yml          # All services
+└── nginx.conf                  # Reverse proxy
 ```
+
+## Scripts
+
+| Script | Description |
+|--------|-------------|
+| `fetch-problems.ts` | Fetch problems from Codeforces API and seed DB |
+| `fetch-problems.ts backfill 30` | Seed 30 days of past problems |
+| `generate-editorials.ts` | Generate AI editorials for problems |
+| `generate-editorials.ts --today` | Only generate for today's problems |
+| `generate-editorials.ts --clear` | Clear all editorials first |
+
+## Cost
+
+- **DigitalOcean 2GB droplet**: ~$12/mo
+- **OpenAI GPT-4o** (4 editorials/day): ~$2/mo
+- **Total**: ~$14/mo
+
+## TODO
+
+- [ ] Discord bot deployment (needs `GUILD_ID` + `NOTIFICATION_CHANNEL_ID`)
+- [ ] Daily cron job for automatic problem rotation
+- [ ] User accounts and progress tracking UI
+- [ ] Custom domain + SSL
+- [ ] Seed editorials for full 30-day archive
