@@ -1,6 +1,6 @@
 # DailyCodeforce
 
-Daily Codeforces problems for competitive programming practice. A new problem every day across four difficulty tiers, with AI-generated LeetCode-style editorials.
+Daily Codeforces problems for competitive programming practice. A new problem every day across four difficulty tiers, with LeetCode-style editorials.
 
 **Live:** http://159.65.226.241
 
