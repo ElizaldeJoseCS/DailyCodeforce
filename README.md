@@ -55,7 +55,7 @@ npx tsx scripts/fetch-problems.ts
 npx next dev
 ```
 
-Visit http://localhost:3000
+Visit locally at http://localhost:3000
 
 ### Generate Editorials
 
@@ -121,27 +121,3 @@ dailycodeforce/
 ├── docker-compose.yml          # All services
 └── nginx.conf                  # Reverse proxy
 ```
-
-## Scripts
-
-| Script | Description |
-|--------|-------------|
-| `fetch-problems.ts` | Fetch problems from Codeforces API and seed DB |
-| `fetch-problems.ts backfill 30` | Seed 30 days of past problems |
-| `generate-editorials.ts` | Generate AI editorials for problems |
-| `generate-editorials.ts --today` | Only generate for today's problems |
-| `generate-editorials.ts --clear` | Clear all editorials first |
-
-## Cost
-
-- **DigitalOcean 2GB droplet**: ~$12/mo
-- **OpenAI GPT-4o** (4 editorials/day): ~$2/mo
-- **Total**: ~$14/mo
-
-## TODO
-
-- [ ] Discord bot deployment (needs `GUILD_ID` + `NOTIFICATION_CHANNEL_ID`)
-- [ ] Daily cron job for automatic problem rotation
-- [ ] User accounts and progress tracking UI
-- [ ] Custom domain + SSL
-- [ ] Seed editorials for full 30-day archive
