@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   ExternalLink,
@@ -91,9 +91,8 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-function CodeBlock(props: Record<string, unknown>) {
-  const children = props.children as ReactNode;
-  const className = (props.className as string) || "";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function CodeBlock({ children, className, ...props }: any) {
   const match = /language-(\w+)/.exec(className);
   const language = match ? match[1] : null;
   const code =
