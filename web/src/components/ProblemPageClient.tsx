@@ -91,8 +91,10 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-function CodeBlock({ children, className, ...props }: { children: ReactNode; className?: string; [key: string]: unknown }) {
-  const match = /language-(\w+)/.exec(className || "");
+function CodeBlock(props: Record<string, unknown>) {
+  const children = props.children as ReactNode;
+  const className = (props.className as string) || "";
+  const match = /language-(\w+)/.exec(className);
   const language = match ? match[1] : null;
   const code =
     typeof children === "string"
@@ -103,7 +105,7 @@ function CodeBlock({ children, className, ...props }: { children: ReactNode; cla
 
   if (!language) {
     return (
-      <code className={className} {...props}>
+      <code className={className}>
         {children}
       </code>
     );
@@ -117,8 +119,8 @@ function CodeBlock({ children, className, ...props }: { children: ReactNode; cla
         </span>
       </div>
       <CopyButton text={code} />
-      <pre className={className} {...props}>
-        <code className={className} {...props}>
+      <pre className={className}>
+        <code className={className}>
           {children}
         </code>
       </pre>
