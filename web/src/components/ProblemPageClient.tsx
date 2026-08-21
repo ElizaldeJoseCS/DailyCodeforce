@@ -1,9 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
-import { ExternalLink, ArrowLeft, Calendar, Eye, EyeOff } from "lucide-react";
+import {
+  ExternalLink,
+  ArrowLeft,
+  Calendar,
+  Eye,
+  EyeOff,
+  Copy,
+  Check,
+} from "lucide-react";
 import Markdown from "react-markdown";
+import rehypeHighlight from "rehype-highlight";
 
 interface DailyProblem {
   id: string;
@@ -30,10 +39,8 @@ const TIER_LABELS: Record<string, string> = {
 
 function TierBadge({ tier }: { tier: string }) {
   const colors: Record<string, string> = {
-    beginner:
-      "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
-    intermediate:
-      "text-yellow-400 border-yellow-500/30 bg-yellow-500/10",
+    beginner: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
+    intermediate: "text-yellow-400 border-yellow-500/30 bg-yellow-500/10",
     advanced: "text-orange-400 border-orange-500/30 bg-orange-500/10",
     expert: "text-red-400 border-red-500/30 bg-red-500/10",
   };
@@ -56,9 +63,66 @@ function RatingBadge({ rating }: { rating: number }) {
   else if (rating < 2400) color = "text-yellow-400";
   else color = "text-red-400";
   return (
-    <span className={`text-2xl font-mono font-bold ${color}`}>
-      {rating}
-    </span>
+    <span className={`text-2xl font-mono font-bold ${color}`}>{rating}</span>
+  );
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="absolute top-2 right-2 p-1.5 rounded-md bg-gray-700/50 hover:bg-gray-600/50 text-gray-400 hover:text-gray-200 transition-colors"
+      title="Copy code"
+    >
+      {copied ? (
+        <Check className="w-4 h-4 text-green-400" />
+      ) : (
+        <Copy className="w-4 h-4" />
+      )}
+    </button>
+  );
+}
+
+function CodeBlock({ children, className, ...props }: { children: ReactNode; className?: string; [key: string]: unknown }) {
+  const match = /language-(\w+)/.exec(className || "");
+  const language = match ? match[1] : null;
+  const code =
+    typeof children === "string"
+      ? children
+      : typeof children === "object" && children !== null && "props" in children
+        ? String((children as { props?: { children?: string } }).props?.children ?? "")
+        : "";
+
+  if (!language) {
+    return (
+      <code className={className} {...props}>
+        {children}
+      </code>
+    );
+  }
+
+  return (
+    <div className="relative group">
+      <div className="absolute top-0 left-0 z-10 flex items-center">
+        <span className="px-2.5 py-0.5 text-xs font-mono font-medium text-cyan-400 bg-cyan-500/10 rounded-br-lg border-b border-r border-cyan-500/20">
+          {language.toUpperCase()}
+        </span>
+      </div>
+      <CopyButton text={code} />
+      <pre className={className} {...props}>
+        <code className={className} {...props}>
+          {children}
+        </code>
+      </pre>
+    </div>
   );
 }
 
@@ -152,8 +216,16 @@ export default function ProblemPageClient({ daily }: { daily: DailyProblem }) {
 
           {showAnswer && daily.editorial && (
             <div className="px-8 pb-8">
-              <div className="prose prose-invert prose-headings:text-gray-200 prose-p:text-gray-300 prose-code:text-cyan-400 prose-pre:bg-gray-950 prose-pre:border prose-pre:border-gray-800 max-w-none">
-                <Markdown>{daily.editorial}</Markdown>
+              <div className="prose prose-invert max-w-none">
+                <Markdown
+                  rehypePlugins={[rehypeHighlight]}
+                  components={{
+                    pre: ({ children }) => <>{children}</>,
+                    code: CodeBlock,
+                  }}
+                >
+                  {daily.editorial}
+                </Markdown>
               </div>
               <div className="mt-6 pt-4 border-t border-gray-800">
                 <a

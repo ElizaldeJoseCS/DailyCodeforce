@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import "highlight.js/styles/github-dark.css";
+
 :root {
   --background: #030712;
   --foreground: #f9fafb;
@@ -10,4 +12,41 @@
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+/* Editorial prose overrides */
+.prose pre {
+  @apply rounded-lg border border-gray-800 bg-[#0d1117] p-4 overflow-x-auto;
+}
+
+.prose code {
+  @apply text-cyan-400;
+}
+
+.prose :not(pre) > code {
+  @apply bg-gray-800/60 px-1.5 py-0.5 rounded text-sm;
+}
+
+.prose h2 {
+  @apply text-gray-100 border-b border-gray-800 pb-2 mt-8 mb-4;
+}
+
+.prose ul {
+  @apply space-y-1;
+}
+
+.prose li {
+  @apply text-gray-300;
+}
+
+.prose strong {
+  @apply text-gray-100;
+}
+
+.prose p {
+  @apply text-gray-300 leading-relaxed;
+}
+
+.prose blockquote {
+  @apply border-l-cyan-500 bg-gray-900/50 px-4 py-2 rounded-r-lg;
 }
