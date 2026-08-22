@@ -1,0 +1,18 @@
+FROM node:20-alpine
+
+ARG SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.2.33/supercronic-linux-amd64
+RUN curl -fsSL "$SUPERCRONIC_URL" -o /usr/local/bin/supercronic \
+    && chmod +x /usr/local/bin/supercronic
+
+WORKDIR /app
+
+COPY package*.json ./
+COPY prisma ./prisma/
+RUN npm ci
+
+COPY . .
+RUN npx prisma generate
+
+RUN chmod +x scripts/daily.sh
+
+CMD ["supercronic", "scripts/crontab"]

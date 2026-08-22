@@ -54,5 +54,16 @@ services:
     depends_on:
       - web
 
+  cron:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.cron
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://dailycodeforce:${DB_PASSWORD:-dcf_dev_password}@postgres:5432/dailycodeforce?schema=public
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    depends_on:
+      - postgres
+
 volumes:
   pgdata:
