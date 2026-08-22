@@ -35,6 +35,8 @@ func OnInteractionCreate(db *sql.DB) func(s *discordgo.Session, i *discordgo.Int
 			handleSolve(s, i, db)
 		case "link":
 			handleLink(s, i, db)
+		case "verify":
+			handleVerify(s, i, db)
 		}
 	}
 }
@@ -91,6 +93,30 @@ func RegisterCommands(s *discordgo.Session) {
 			Name:        "link",
 			Description: "Link your Discord to your DailyCodeforce account",
 		},
+		{
+			Name:        "verify",
+			Description: "Verify your Codeforces handle ownership",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "start",
+					Description: "Start verification with your Codeforces handle",
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Type:        discordgo.ApplicationCommandOptionString,
+							Name:        "handle",
+							Description: "Your Codeforces handle",
+							Required:    true,
+						},
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "confirm",
+					Description: "Confirm you've set the verification token on your CF profile",
+				},
+			},
+		},
 	}
 
 	for _, cmd := range commands {
@@ -121,15 +147,9 @@ func SendDailyNotification(s *discordgo.Session, db *sql.DB, channelID string) e
 		"advanced":     "🟠",
 		"expert":       "🔴",
 	}
-	tierLabel := map[string]string{
-		"beginner":     "Beginner (800–1200)",
-		"intermediate": "Intermediate (1200–1600)",
-		"advanced":     "Advanced (1600–2000)",
-		"expert":       "Expert (2000+)",
-	}
 
 	rows, err := db.Query(`
-		SELECT dp.tier, p.name, p.rating, p.url, p.tags
+		SELECT dp.tier, p.name, p.rating, p.url, p.tags, p."cfContestId", p."cfIndex"
 		FROM daily_problems dp
 		JOIN problems p ON p.id = dp."problemId"
 		WHERE dp.date = CURRENT_DATE
@@ -141,15 +161,15 @@ func SendDailyNotification(s *discordgo.Session, db *sql.DB, channelID string) e
 	defer rows.Close()
 
 	type problem struct {
-		tier, name, url, tags string
-		rating                int
+		tier, name, url, tags, index string
+		rating, contestID            int
 	}
 
 	var problems []problem
 
 	for rows.Next() {
 		var p problem
-		if err := rows.Scan(&p.tier, &p.name, &p.rating, &p.url, &p.tags); err != nil {
+		if err := rows.Scan(&p.tier, &p.name, &p.rating, &p.url, &p.tags, &p.contestID, &p.index); err != nil {
 			log.Printf("Error scanning row: %v", err)
 			continue
 		}
@@ -160,19 +180,104 @@ func SendDailyNotification(s *discordgo.Session, db *sql.DB, channelID string) e
 		return nil
 	}
 
-	description := ""
 	for _, p := range problems {
 		emoji := tierEmoji[p.tier]
-		label := tierLabel[p.tier]
-		description += fmt.Sprintf("%s **%s** — %s\nRating: %d | [Solve](%s)\n\n", emoji, p.name, label, p.rating, p.url)
-	}
+		color := tierColorInt(p.tier)
 
-	content := fmt.Sprintf("📋 **Today's DailyCodeforce Problems**\n\n%sGood luck!", description)
+		ps, scrapeErr := ScrapeProblem(p.contestID, p.index)
 
-	_, err = s.ForumThreadStart(channelID, "📋 Daily Problems", 10080, content)
-	if err != nil {
-		log.Printf("Failed to create forum thread: %v", err)
-		return err
+		embed := &discordgo.MessageEmbed{
+			Title:       fmt.Sprintf("%s %s (Rating: %d)", emoji, p.name, p.rating),
+			URL:         p.url,
+			Color:       color,
+			Description: fmt.Sprintf("**Tags:** %s\n⏱ 1s · 💾 256MB", p.tags),
+		}
+
+		if scrapeErr != nil {
+			log.Printf("Scrape failed for %d%s: %v", p.contestID, p.index, scrapeErr)
+			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+				Name:  "⚠️ Statement",
+				Value: "Full statement couldn't be fetched. [View on Codeforces →](" + p.url + ")",
+			})
+		} else {
+			if ps.Statement != "" {
+				statement := ps.Statement
+				if len(statement) > 1024 {
+					statement = statement[:1021] + "..."
+				}
+				embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+					Name:  "📝 Statement",
+					Value: statement,
+				})
+			}
+
+			if ps.Input != "" {
+				input := ps.Input
+				if len(input) > 1024 {
+					input = input[:1021] + "..."
+				}
+				embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+					Name:  "📥 Input",
+					Value: "```\n" + input + "\n```",
+				})
+			}
+
+			if ps.Output != "" {
+				output := ps.Output
+				if len(output) > 1024 {
+					output = output[:1021] + "..."
+				}
+				embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+					Name:  "📤 Output",
+					Value: "```\n" + output + "\n```",
+				})
+			}
+
+			for idx, ex := range ps.Examples {
+				if idx >= 3 {
+					remaining := len(ps.Examples) - 3
+					embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+						Name:  fmt.Sprintf("📎 +%d more", remaining),
+						Value: fmt.Sprintf("[View all examples on Codeforces →](%s)", p.url),
+					})
+					break
+				}
+				example := fmt.Sprintf("**Input:**\n```\n%s\n```\n**Output:**\n```\n%s\n```", ex.Input, ex.Output)
+				if len(example) > 1024 {
+					example = example[:1021] + "..."
+				}
+				embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+					Name:  fmt.Sprintf("📋 Example %d", idx+1),
+					Value: example,
+				})
+			}
+
+			if ps.Note != "" {
+				note := ps.Note
+				if len(note) > 1024 {
+					note = note[:1021] + "..."
+				}
+				embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+					Name:  "💡 Note",
+					Value: note,
+				})
+			}
+		}
+
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name:  "🔗 Solve it",
+			Value: fmt.Sprintf("[Codeforces →](%s)", p.url),
+		})
+
+		content := fmt.Sprintf("📋 **Today's DailyCodeforce — %s**", p.tier[0:1]+p.tier[1:])
+
+		_, err = s.ForumThreadStart(channelID, fmt.Sprintf("📋 %s — %s", p.tier[0:1]+p.tier[1:], p.name), 10080, content)
+		if err != nil {
+			log.Printf("Failed to create forum thread: %v", err)
+			return err
+		}
+
+		time.Sleep(500 * time.Millisecond)
 	}
 
 	return nil

@@ -4,6 +4,20 @@ import { fetchAllProblems, problemUrl } from "@/lib/codeforces";
 import { TIERS, TIER_ORDER } from "@/lib/tiers";
 
 const DEDUP_WINDOW_DAYS = 90;
+const TAG_ROTATION_WINDOW_DAYS = 14;
+
+const PREFERRED_TAGS = [
+  "implementation",
+  "math",
+  "greedy",
+  "brute force",
+  "strings",
+  "sorting",
+  "dp",
+  "data structures",
+  "two pointers",
+  "binary search",
+];
 
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -50,7 +64,41 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
-    const picked = available[Math.floor(Math.random() * available.length)];
+    const tagCutoff = new Date();
+    tagCutoff.setDate(tagCutoff.getDate() - TAG_ROTATION_WINDOW_DAYS);
+
+    const recentTagProblems = await prisma.dailyProblem.findMany({
+      where: { tier, date: { gte: tagCutoff } },
+      select: { problem: { select: { tags: true } } },
+    });
+
+    const tagCounts: Record<string, number> = {};
+    for (const rp of recentTagProblems) {
+      if (!rp.problem.tags) continue;
+      for (const tag of rp.problem.tags.split(",")) {
+        const t = tag.trim().toLowerCase();
+        if (t) tagCounts[t] = (tagCounts[t] || 0) + 1;
+      }
+    }
+
+    const sortedTags = Object.entries(tagCounts)
+      .sort((a, b) => a[1] - b[1])
+      .map(([tag]) => tag);
+
+    const underused = sortedTags.slice(0, 3);
+
+    let picked = available[Math.floor(Math.random() * available.length)];
+
+    if (underused.length > 0) {
+      const tagPreferred = available.filter((p) => {
+        if (!p.tags) return false;
+        const pTags = p.tags.map((t) => t.toLowerCase());
+        return underused.some((ut) => pTags.includes(ut));
+      });
+      if (tagPreferred.length > 0) {
+        picked = tagPreferred[Math.floor(Math.random() * tagPreferred.length)];
+      }
+    }
 
     const problem = await prisma.problem.upsert({
       where: {

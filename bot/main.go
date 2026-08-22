@@ -44,6 +44,18 @@ func main() {
 	}
 	log.Println("Connected to database")
 
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS cf_verifications (
+			"discordId" TEXT PRIMARY KEY,
+			handle TEXT NOT NULL,
+			token TEXT NOT NULL,
+			"expiresAt" TIMESTAMPTZ NOT NULL
+		)
+	`)
+	if err != nil {
+		log.Printf("Warning: could not create cf_verifications table: %v", err)
+	}
+
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		log.Fatal("Failed to create Discord session:", err)
@@ -81,13 +93,20 @@ func startDailyNotifier(dg *discordgo.Session, db *sql.DB) {
 		return
 	}
 
+	pacific, err := time.LoadLocation("America/Los_Angeles")
+	if err != nil {
+		log.Printf("Failed to load Pacific timezone, falling back to UTC: %v", err)
+		pacific = time.UTC
+	}
+
 	for {
-		now := time.Now()
-		target := time.Date(now.Year(), now.Month(), now.Day(), 9, 0, 0, 0, time.UTC)
+		now := time.Now().In(pacific)
+		target := time.Date(now.Year(), now.Month(), now.Day(), 17, 0, 0, 0, pacific)
 		if now.After(target) {
 			target = target.Add(24 * time.Hour)
 		}
 
+		log.Printf("Next daily post at %s (in %v)", target.Format(time.RFC1123), time.Until(target).Round(time.Minute))
 		time.Sleep(time.Until(target))
 
 		if err := handlers.SendDailyNotification(dg, db, channelID); err != nil {
