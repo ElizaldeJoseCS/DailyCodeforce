@@ -136,38 +136,42 @@ export default function ProfilePage() {
   const hasSocials = socials?.github || socials?.twitter || socials?.website;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
-      <Link
-        href="/"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-300 mb-8 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back
-      </Link>
+    <div
+      className="min-h-screen"
+      style={{ backgroundColor: bg }}
+    >
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-300 mb-8 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </Link>
 
-      {/* Banner */}
-      <div
-        className="rounded-xl overflow-hidden mb-6 relative"
-        style={{ backgroundColor: bg }}
-      >
-        {profile.bannerUrl ? (
-          <img
-            src={profile.bannerUrl}
-            alt="Banner"
-            className="w-full h-48 object-cover"
-          />
-        ) : (
-          <div
-            className="w-full h-48"
-            style={{
-              background: `linear-gradient(135deg, ${accent}22, ${accent}08)`,
-            }}
-          />
-        )}
-      </div>
+        {/* Banner */}
+        <div
+          className="rounded-xl overflow-hidden mb-6 relative"
+          style={{ backgroundColor: bg }}
+        >
+          {profile.bannerUrl ? (
+            <img
+              src={profile.bannerUrl}
+              alt="Banner"
+              className="w-full h-48 object-cover"
+            />
+          ) : (
+            <div
+              className="w-full h-48"
+              style={{
+                background: `linear-gradient(135deg, ${accent}22, ${accent}08)`,
+              }}
+            />
+          )}
+        </div>
 
-      {/* Profile Header */}
-      <div className="flex items-end gap-6 -mt-16 mb-8 relative z-10 px-4">
+        {/* Profile Header */}
+        <div className="flex items-end gap-6 -mt-16 mb-8 relative z-10 px-4">
         <div
           className={`w-28 h-28 rounded-full border-4 overflow-hidden flex-shrink-0 ${frame.class}`}
           style={{ borderColor: bg, backgroundColor: "#1f2937" }}
@@ -192,6 +196,12 @@ export default function ProfilePage() {
             )}
           </div>
           <p className="text-gray-400">@{profile.username}</p>
+
+          {/* Side bio */}
+          {layout.bioPosition === "side" && profile.bio && (
+            <p className="text-sm text-gray-300 mt-2 whitespace-pre-wrap max-w-md">{profile.bio}</p>
+          )}
+
           <div className="flex items-center gap-3 mt-1 flex-wrap">
             <a
               href={`https://codeforces.com/profile/${profile.cfHandle}`}
@@ -329,6 +339,7 @@ export default function ProfilePage() {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }
