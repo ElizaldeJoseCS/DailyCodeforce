@@ -12,11 +12,14 @@ export async function PUT(req: NextRequest) {
 
   const body = await req.json();
 
-  const allowed = ["displayName", "bio", "avatarUrl", "bannerUrl", "backgroundColor", "accentColor"];
+  const stringFields = ["displayName", "bio", "avatarUrl", "bannerUrl", "backgroundColor", "accentColor", "avatarFrame"];
   const data: Record<string, string | null> = {};
-  for (const key of allowed) {
-    if (body[key] !== undefined) data[key] = body[key] || null;
+  for (const key of stringFields) {
+    if (key in body) data[key] = body[key] || null;
   }
+
+  if ("socialLinks" in body) data.socialLinks = JSON.stringify(body.socialLinks || {});
+  if ("profileLayout" in body) data.profileLayout = JSON.stringify(body.profileLayout || {});
 
   const user = await prisma.user.update({
     where: { id: userId },
@@ -30,6 +33,9 @@ export async function PUT(req: NextRequest) {
       bannerUrl: true,
       backgroundColor: true,
       accentColor: true,
+      socialLinks: true,
+      profileLayout: true,
+      avatarFrame: true,
     },
   });
 

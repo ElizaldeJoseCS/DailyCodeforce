@@ -19,6 +19,9 @@ model User {
   bannerUrl       String?
   backgroundColor String?        @default("#030712")
   accentColor     String?        @default("#22d3ee")
+  socialLinks     Json?
+  profileLayout   Json?
+  avatarFrame     String?        @default("none")
   discordId       String?        @unique
   discordAvatar   String?
   role            String         @default("user")

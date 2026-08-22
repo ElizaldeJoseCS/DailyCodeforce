@@ -79,6 +79,15 @@ export function Navbar() {
   };
 
   const username = user?.username;
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!username) return;
+    fetch(`/api/users/${username}`)
+      .then((r) => r.json())
+      .then((d) => setAvatarUrl(d.avatarUrl || d.discordAvatar))
+      .catch(() => {});
+  }, [username]);
 
   return (
     <nav className="border-b border-gray-800 bg-gray-950/80 backdrop-blur-sm sticky top-0 z-50">
@@ -204,13 +213,13 @@ export function Navbar() {
               href={`/profile/${username}`}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-800 transition-colors text-sm text-gray-300"
             >
-                {user?.image ? (
+                {avatarUrl ? (
                   <img
-                    src={user.image}
+                    src={avatarUrl}
                     alt=""
                     className="w-6 h-6 rounded-full"
                   />
-              ) : (
+                ) : (
                 <User className="w-4 h-4" />
               )}
               <span className="hidden sm:inline">{username}</span>
