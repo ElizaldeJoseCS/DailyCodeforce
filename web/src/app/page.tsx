@@ -125,7 +125,6 @@ export default async function HomePage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 text-xs text-gray-500 hover:text-cyan-400 transition-colors"
-                  onClick={(e) => e.stopPropagation()}
                 >
                   <ExternalLink className="w-3 h-3" />
                   Codeforces
