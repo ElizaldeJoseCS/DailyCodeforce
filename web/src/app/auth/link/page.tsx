@@ -81,10 +81,10 @@ export default function LinkDiscordPage() {
 
               <button
                 type="submit"
-                disabled={loading || code.length < 6}
+                disabled={status === "loading" || code.length < 6}
                 className="w-full py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
               >
-                {loading ? "Linking..." : "Link Account"}
+                {status === "loading" ? "Linking..." : "Link Account"}
               </button>
             </form>
           )}
