@@ -10,6 +10,9 @@ datasource db {
 model User {
   id              String         @id @default(cuid())
   email           String         @unique
+  emailVerified   Boolean        @default(false)
+  verificationCode String?
+  verificationCodeExpires DateTime?
   passwordHash    String?
   username        String         @unique
   cfHandle        String         @unique

@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"crypto/rand"
 	"database/sql"
 	"fmt"
 	"log"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -30,6 +33,8 @@ func OnInteractionCreate(db *sql.DB) func(s *discordgo.Session, i *discordgo.Int
 			handleLeaderboard(s, i, db)
 		case "solve":
 			handleSolve(s, i, db)
+		case "link":
+			handleLink(s, i, db)
 		}
 	}
 }
@@ -81,6 +86,10 @@ func RegisterCommands(s *discordgo.Session) {
 					},
 				},
 			},
+		},
+		{
+			Name:        "link",
+			Description: "Link your Discord to your DailyCodeforce account",
 		},
 	}
 
@@ -189,4 +198,60 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func handleLink(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql.DB) {
+	discordID := i.Member.User.ID
+
+	var existingUsername string
+	err := db.QueryRow(`SELECT username FROM users WHERE "discordId" = $1`, discordID).Scan(&existingUsername)
+	if err == nil {
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: fmt.Sprintf("✅ Your Discord is already linked to **%s**!", existingUsername),
+			},
+		})
+		return
+	}
+
+	code := generateCode(6)
+
+	db.Exec(`DELETE FROM discord_link_codes WHERE "discordId" = $1`, discordID)
+
+	_, err = db.Exec(`
+		INSERT INTO discord_link_codes (code, "discordId", "expiresAt")
+		VALUES ($1, $2, $3)
+	`, code, discordID, time.Now().Add(10*time.Minute))
+	if err != nil {
+		log.Printf("Error inserting link code: %v", err)
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "❌ Failed to generate link code. Please try again.",
+			},
+		})
+		return
+	}
+
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: fmt.Sprintf(
+				"🔗 **Link your account**\n\nGo to **%s/auth/link** and enter this code:\n\n# `%s`\n\n⏰ Code expires in 10 minutes.",
+				getEnv("SITE_URL", "http://159.65.226.241"),
+				strings.ToUpper(code),
+			),
+		},
+	})
+}
+
+func generateCode(n int) string {
+	const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+	b := make([]byte, n)
+	rand.Read(b)
+	for i := range b {
+		b[i] = letters[b[i]%byte(len(letters))]
+	}
+	return string(b)
 }

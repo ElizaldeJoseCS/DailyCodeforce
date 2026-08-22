@@ -32,6 +32,7 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user || !user.passwordHash) return null;
+        if (!user.emailVerified) return null;
 
         const valid = await bcrypt.compare(credentials.password, user.passwordHash);
         if (!valid) return null;
@@ -107,6 +108,7 @@ export const authOptions: NextAuthOptions = {
             discordAvatar: user.image,
             avatarUrl: user.image,
             cfHandle: "pending-" + account.providerAccountId,
+            emailVerified: true,
           },
         });
         (user as SessionUser).id = newUser.id;

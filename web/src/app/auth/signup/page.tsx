@@ -42,7 +42,7 @@ export default function SignUpPage() {
       return;
     }
 
-    router.push("/auth/signin?registered=true");
+    router.push(`/auth/verify?email=${encodeURIComponent(form.email)}`);
   };
 
   return (

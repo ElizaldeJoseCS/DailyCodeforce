@@ -19,6 +19,20 @@ export default function SignInPage() {
     setError("");
     setLoading(true);
 
+    const checkRes = await fetch("/api/auth/check-verification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const checkData = await checkRes.json();
+
+    if (checkData.verified === false) {
+      setError("");
+      setLoading(false);
+      router.push(`/auth/verify?email=${encodeURIComponent(email)}`);
+      return;
+    }
+
     const result = await signIn("credentials", {
       email,
       password,
@@ -120,6 +134,12 @@ export default function SignInPage() {
             Don&apos;t have an account?{" "}
             <Link href="/auth/signup" className="text-cyan-400 hover:text-cyan-300">
               Sign up
+            </Link>
+          </p>
+          <p className="mt-2 text-center text-sm text-gray-500">
+            Need to verify your email?{" "}
+            <Link href="/auth/verify" className="text-cyan-400 hover:text-cyan-300">
+              Verify here
             </Link>
           </p>
         </div>

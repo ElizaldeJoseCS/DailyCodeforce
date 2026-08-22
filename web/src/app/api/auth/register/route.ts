@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { prisma } from "@/lib/db";
 import { verifyCFHandle } from "@/lib/codeforces";
+import { sendVerificationEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   const { email, password, username, cfHandle } = await req.json();
@@ -37,6 +39,8 @@ export async function POST(req: NextRequest) {
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
+  const code = crypto.randomInt(100000, 999999).toString();
+  const expires = new Date(Date.now() + 15 * 60 * 1000);
 
   const user = await prisma.user.create({
     data: {
@@ -45,8 +49,16 @@ export async function POST(req: NextRequest) {
       passwordHash,
       cfHandle,
       avatarUrl: cfCheck.avatar,
+      verificationCode: code,
+      verificationCodeExpires: expires,
     },
   });
 
-  return NextResponse.json({ message: "Account created", userId: user.id });
+  try {
+    await sendVerificationEmail(email, code);
+  } catch (err) {
+    console.error("Failed to send verification email:", err);
+  }
+
+  return NextResponse.json({ message: "Account created. Please verify your email.", userId: user.id });
 }
