@@ -62,6 +62,8 @@ services:
     environment:
       DATABASE_URL: postgresql://dailycodeforce:${DB_PASSWORD:-dcf_dev_password}@postgres:5432/dailycodeforce?schema=public
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+    volumes:
+      - ./.env:/app/.env:ro
     depends_on:
       - postgres
 
