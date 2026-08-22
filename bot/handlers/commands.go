@@ -160,15 +160,9 @@ func SendDailyNotification(s *discordgo.Session, db *sql.DB, channelID string) e
 
 	content := fmt.Sprintf("📋 **Today's DailyCodeforce Problems**\n\n%sGood luck!", description)
 
-	thread, err := s.ThreadStart(channelID, "📋 Daily Problems", discordgo.ThreadPublic, 10080)
+	_, err = s.ForumThreadStart(channelID, "📋 Daily Problems", 10080, content)
 	if err != nil {
 		log.Printf("Failed to create forum thread: %v", err)
-		return err
-	}
-
-	_, err = s.ChannelMessageSend(thread.ID, content)
-	if err != nil {
-		log.Printf("Failed to send message to thread: %v", err)
 		return err
 	}
 
