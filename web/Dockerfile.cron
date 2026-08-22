@@ -1,11 +1,5 @@
 FROM node:20-alpine
 
-ARG SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.2.33/supercronic-linux-amd64
-RUN apk add --no-cache curl \
-    && curl -fsSL "$SUPERCRONIC_URL" -o /usr/local/bin/supercronic \
-    && chmod +x /usr/local/bin/supercronic \
-    && apk del curl
-
 WORKDIR /app
 
 COPY package*.json ./
@@ -17,4 +11,4 @@ RUN npx prisma generate
 
 RUN chmod +x scripts/daily.sh
 
-CMD ["supercronic", "scripts/crontab"]
+CMD ["sh", "-c", "echo 'Cron started, running daily job at 00:00 UTC'; while true; do NEXT_MIDNIGHT=$(date -u -d 'tomorrow 00:00' +%s); NOW=$(date -u +%s); SLEEP=$((NEXT_MIDNIGHT - NOW)); echo \"[$(date -u)] Sleeping $SLEEP seconds until next midnight UTC...\"; sleep $SLEEP; echo \"[$(date -u)] Running daily job...\"; /app/daily.sh 2>&1; done"]
