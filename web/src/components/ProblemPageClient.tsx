@@ -292,7 +292,7 @@ export default function ProblemPageClient({
                 <Eye className="w-5 h-5 text-cyan-400" />
               )}
               <span className="font-semibold text-lg">
-                {showAnswer ? "Hide Editorial" : "Show Editorial & Solution"}
+                {showAnswer ? "Hide Editorial" : "Show Editorial"}
               </span>
             </div>
             <span className="text-sm text-gray-500">
