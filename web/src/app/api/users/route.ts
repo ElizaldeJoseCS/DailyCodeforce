@@ -12,32 +12,40 @@ export async function PUT(req: NextRequest) {
 
   const body = await req.json();
 
-  const stringFields = ["displayName", "bio", "avatarUrl", "bannerUrl", "backgroundColor", "accentColor", "avatarFrame"];
-  const data: Record<string, string | null> = {};
-  for (const key of stringFields) {
-    if (key in body) data[key] = body[key] || null;
-  }
+  const data: Record<string, unknown> = {};
 
+  if ("displayName" in body) data.displayName = body.displayName || null;
+  if ("bio" in body) data.bio = body.bio || null;
+  if ("avatarUrl" in body) data.avatarUrl = body.avatarUrl || null;
+  if ("bannerUrl" in body) data.bannerUrl = body.bannerUrl || null;
+  if ("backgroundColor" in body) data.backgroundColor = body.backgroundColor || null;
+  if ("accentColor" in body) data.accentColor = body.accentColor || null;
+  if ("avatarFrame" in body) data.avatarFrame = body.avatarFrame || null;
   if ("socialLinks" in body) data.socialLinks = body.socialLinks || {};
   if ("profileLayout" in body) data.profileLayout = body.profileLayout || {};
 
-  const user = await prisma.user.update({
-    where: { id: userId },
-    data,
-    select: {
-      id: true,
-      username: true,
-      displayName: true,
-      bio: true,
-      avatarUrl: true,
-      bannerUrl: true,
-      backgroundColor: true,
-      accentColor: true,
-      socialLinks: true,
-      profileLayout: true,
-      avatarFrame: true,
-    },
-  });
+  try {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data,
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        bio: true,
+        avatarUrl: true,
+        bannerUrl: true,
+        backgroundColor: true,
+        accentColor: true,
+        socialLinks: true,
+        profileLayout: true,
+        avatarFrame: true,
+      },
+    });
 
-  return NextResponse.json(user);
+    return NextResponse.json(user);
+  } catch (err) {
+    console.error("Profile update error:", err);
+    return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
+  }
 }
