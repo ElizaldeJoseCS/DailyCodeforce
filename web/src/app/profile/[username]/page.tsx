@@ -184,7 +184,7 @@ export default function ProfilePage() {
             </div>
           )}
         </div>
-        <div className="pb-1 flex-1 min-w-0">
+        <div className="pt-16 pb-1 flex-1 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-bold" style={{ color: accent }}>
               {profile.displayName || profile.username}
