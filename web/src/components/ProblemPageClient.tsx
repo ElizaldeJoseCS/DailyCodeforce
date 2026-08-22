@@ -72,14 +72,15 @@ function RatingBadge({ rating }: { rating: number }) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function CodeBlock({ children, className }: any) {
-  const codeRef = useRef<HTMLElement>(null);
+function CodeBlock({ children, className, ...props }: any) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   const match = className ? /language-(\w+)/.exec(className) : null;
   const language = match ? match[1] : null;
 
   const handleCopy = useCallback(async () => {
-    const text = codeRef.current?.textContent || "";
+    const codeEl = wrapperRef.current?.querySelector("code");
+    const text = codeEl?.textContent || "";
     await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -87,14 +88,14 @@ function CodeBlock({ children, className }: any) {
 
   if (!language) {
     return (
-      <code className={className}>
+      <code className={className} {...props}>
         {children}
       </code>
     );
   }
 
   return (
-    <div className="relative group">
+    <div ref={wrapperRef} className="relative group">
       <div className="absolute top-0 left-0 z-10 flex items-center">
         <span className="px-2.5 py-0.5 text-xs font-mono font-medium text-cyan-400 bg-cyan-500/10 rounded-br-lg border-b border-r border-cyan-500/20">
           {language.toUpperCase()}
@@ -112,7 +113,7 @@ function CodeBlock({ children, className }: any) {
         )}
       </button>
       <pre className={className}>
-        <code ref={codeRef} className={className}>
+        <code className={className} {...props}>
           {children}
         </code>
       </pre>

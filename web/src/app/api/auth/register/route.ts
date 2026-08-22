@@ -41,24 +41,26 @@ export async function POST(req: NextRequest) {
   const passwordHash = await bcrypt.hash(password, 12);
   const code = crypto.randomInt(100000, 999999).toString();
   const expires = new Date(Date.now() + 15 * 60 * 1000);
+  const id = crypto.randomUUID();
 
-  const user = await prisma.user.create({
-    data: {
-      email,
-      username,
-      passwordHash,
-      cfHandle,
-      avatarUrl: cfCheck.avatar,
-      verificationCode: code,
-      verificationCodeExpires: expires,
-    },
-  });
+  // Delete any existing pending registration for this email
+  await prisma.$executeRawUnsafe(
+    `DELETE FROM pending_registrations WHERE email = $1`,
+    email
+  );
+
+  await prisma.$executeRawUnsafe(
+    `INSERT INTO pending_registrations (id, email, username, "cfHandle", "passwordHash", "avatarUrl", code, "expiresAt")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    id, email, username, cfHandle, passwordHash, cfCheck.avatar || null, code, expires
+  );
 
   try {
     await sendVerificationEmail(email, code);
   } catch (err) {
     console.error("Failed to send verification email:", err);
+    return NextResponse.json({ error: "Failed to send verification email. Please try again." }, { status: 500 });
   }
 
-  return NextResponse.json({ message: "Account created. Please verify your email.", userId: user.id });
+  return NextResponse.json({ message: "Verification code sent to your email." });
 }
