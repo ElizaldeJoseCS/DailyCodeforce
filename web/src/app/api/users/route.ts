@@ -18,8 +18,8 @@ export async function PUT(req: NextRequest) {
     if (key in body) data[key] = body[key] || null;
   }
 
-  if ("socialLinks" in body) data.socialLinks = JSON.stringify(body.socialLinks || {});
-  if ("profileLayout" in body) data.profileLayout = JSON.stringify(body.profileLayout || {});
+  if ("socialLinks" in body) data.socialLinks = body.socialLinks || {};
+  if ("profileLayout" in body) data.profileLayout = body.profileLayout || {};
 
   const user = await prisma.user.update({
     where: { id: userId },
