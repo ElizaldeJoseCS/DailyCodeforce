@@ -71,7 +71,8 @@ function RatingBadge({ rating }: { rating: number }) {
   );
 }
 
-function CodeBlock({ children, className, ..._props }: any) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function CodeBlock({ children, className }: any) {
   const codeRef = useRef<HTMLElement>(null);
   const [copied, setCopied] = useState(false);
   const match = className ? /language-(\w+)/.exec(className) : null;
