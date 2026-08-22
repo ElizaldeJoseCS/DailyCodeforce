@@ -11,4 +11,4 @@ RUN npx prisma generate
 
 RUN chmod +x scripts/daily.sh
 
-CMD ["sh", "-c", "echo 'Cron started, running daily job at 00:00 UTC'; while true; do NEXT_MIDNIGHT=$(date -u -d 'tomorrow 00:00' +%s); NOW=$(date -u +%s); SLEEP=$((NEXT_MIDNIGHT - NOW)); echo \"[$(date -u)] Sleeping $SLEEP seconds until next midnight UTC...\"; sleep $SLEEP; echo \"[$(date -u)] Running daily job...\"; /app/daily.sh 2>&1; done"]
+CMD ["node", "scripts/cron.js"]
