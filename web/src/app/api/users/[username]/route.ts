@@ -12,6 +12,7 @@ export async function GET(
     select: {
       id: true,
       username: true,
+      cfHandle: true,
       displayName: true,
       bio: true,
       avatarUrl: true,

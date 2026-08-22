@@ -8,27 +8,28 @@ datasource db {
 }
 
 model User {
-  id             String         @id @default(cuid())
-  email          String         @unique
-  passwordHash   String?
-  username       String         @unique
-  displayName    String?
-  bio            String?        @default("")
-  avatarUrl      String?
-  bannerUrl      String?
-  backgroundColor String?       @default("#030712")
-  accentColor    String?        @default("#22d3ee")
-  discordId      String?        @unique
-  discordAvatar  String?
-  role           String         @default("user")
-  currentStreak  Int            @default(0)
-  longestStreak  Int            @default(0)
-  lastSolvedDate DateTime?
-  totalSolved    Int            @default(0)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  progress       UserProgress[]
-  sessions       Session[]
+  id              String         @id @default(cuid())
+  email           String         @unique
+  passwordHash    String?
+  username        String         @unique
+  cfHandle        String         @unique
+  displayName     String?
+  bio             String?        @default("")
+  avatarUrl       String?
+  bannerUrl       String?
+  backgroundColor String?        @default("#030712")
+  accentColor     String?        @default("#22d3ee")
+  discordId       String?        @unique
+  discordAvatar   String?
+  role            String         @default("user")
+  currentStreak   Int            @default(0)
+  longestStreak   Int            @default(0)
+  lastSolvedDate  DateTime?
+  totalSolved     Int            @default(0)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  progress        UserProgress[]
+  sessions        Session[]
 
   @@map("users")
 }
@@ -75,12 +76,13 @@ model DailyProblem {
 }
 
 model UserProgress {
-  id              String       @id @default(cuid())
-  userId          String
-  user            User         @relation(fields: [userId], references: [id])
-  dailyProblemId  String
-  dailyProblem    DailyProblem @relation(fields: [dailyProblemId], references: [id])
-  solvedAt        DateTime     @default(now())
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  dailyProblemId String
+  dailyProblem   DailyProblem @relation(fields: [dailyProblemId], references: [id])
+  solvedAt       DateTime     @default(now())
+  verified       Boolean      @default(false)
 
   @@unique([userId, dailyProblemId])
   @@map("user_progress")

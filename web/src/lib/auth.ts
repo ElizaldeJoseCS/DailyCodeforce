@@ -11,7 +11,9 @@ interface SessionUser {
   image?: string | null;
   username?: string;
   displayName?: string;
+  cfHandle?: string;
   role?: string;
+  needsCfLink?: boolean;
 }
 
 export const authOptions: NextAuthOptions = {
@@ -58,7 +60,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user && token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { username: true, displayName: true, avatarUrl: true, discordAvatar: true, role: true },
+          select: { username: true, displayName: true, avatarUrl: true, discordAvatar: true, cfHandle: true, role: true },
         });
         if (dbUser) {
           const u = session.user as SessionUser;
@@ -66,7 +68,9 @@ export const authOptions: NextAuthOptions = {
           u.username = dbUser.username;
           u.displayName = dbUser.displayName ?? undefined;
           u.image = dbUser.avatarUrl || dbUser.discordAvatar || undefined;
+          u.cfHandle = dbUser.cfHandle;
           u.role = dbUser.role;
+          u.needsCfLink = !dbUser.cfHandle;
         }
       }
       return session;
@@ -102,10 +106,11 @@ export const authOptions: NextAuthOptions = {
             discordId: account.providerAccountId,
             discordAvatar: user.image,
             avatarUrl: user.image,
+            cfHandle: "pending-" + account.providerAccountId,
           },
         });
         (user as SessionUser).id = newUser.id;
-        return true;
+        return `/auth/setup`;
       }
       return true;
     },

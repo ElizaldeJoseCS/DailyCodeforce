@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Flame, Trophy, Target, Calendar } from "lucide-react";
+import { ArrowLeft, Flame, Trophy, Target, Calendar, ExternalLink, ShieldCheck } from "lucide-react";
 
 interface UserProfile {
   id: string;
   username: string;
+  cfHandle: string;
   displayName: string | null;
   bio: string | null;
   avatarUrl: string | null;
@@ -22,6 +23,7 @@ interface UserProfile {
   rank: number;
   progress: {
     solvedAt: string;
+    verified: boolean;
     dailyProblem: {
       tier: string;
       problem: { name: string; rating: number; tags: string[] };
@@ -142,6 +144,15 @@ export default function ProfilePage() {
             {profile.displayName || profile.username}
           </h1>
           <p className="text-gray-400">@{profile.username}</p>
+          <a
+            href={`https://codeforces.com/profile/${profile.cfHandle}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300 mt-1"
+          >
+            <ExternalLink className="w-3 h-3" />
+            {profile.cfHandle}
+          </a>
         </div>
       </div>
 
@@ -195,6 +206,11 @@ export default function ProfilePage() {
                   <span className="text-sm text-gray-300">
                     {p.dailyProblem.problem.name}
                   </span>
+                  {p.verified && (
+                    <span title="Verified on Codeforces">
+                      <ShieldCheck className="w-4 h-4 text-green-400" />
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-3">
                   <span className={`text-sm font-mono ${ratingColor(p.dailyProblem.problem.rating)}`}>

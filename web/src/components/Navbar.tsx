@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { Code2, Search, LogIn, LogOut, User, X } from "lucide-react";
 
@@ -27,16 +28,24 @@ interface SessionUser {
   id?: string;
   username?: string;
   image?: string | null;
+  needsCfLink?: boolean;
 }
 
 export function Navbar() {
   const { data: session } = useSession();
   const user = session?.user as SessionUser | undefined;
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult | null>(null);
   const [open, setOpen] = useState(false);
   const [searching, setSearching] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (user?.needsCfLink) {
+      router.push("/auth/setup");
+    }
+  }, [user, router]);
 
   useEffect(() => {
     if (query.length < 2) {

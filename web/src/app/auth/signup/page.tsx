@@ -3,11 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Code2, Eye, EyeOff } from "lucide-react";
+import { Code2, Eye, EyeOff, ExternalLink } from "lucide-react";
 
 export default function SignUpPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ email: "", username: "", password: "", confirm: "" });
+  const [form, setForm] = useState({ email: "", username: "", cfHandle: "", password: "", confirm: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,6 +29,7 @@ export default function SignUpPage() {
       body: JSON.stringify({
         email: form.email,
         username: form.username,
+        cfHandle: form.cfHandle,
         password: form.password,
       }),
     });
@@ -41,7 +42,7 @@ export default function SignUpPage() {
       return;
     }
 
-    router.push("/auth/signin");
+    router.push("/auth/signin?registered=true");
   };
 
   return (
@@ -53,7 +54,7 @@ export default function SignUpPage() {
             <span>DailyCodeforce</span>
           </Link>
           <h1 className="text-2xl font-bold">Create account</h1>
-          <p className="text-gray-400 mt-2">Start tracking your competitive programming journey</p>
+          <p className="text-gray-400 mt-2">Track your Codeforces journey with daily practice</p>
         </div>
 
         <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-8">
@@ -63,6 +64,29 @@ export default function SignUpPage() {
                 {error}
               </div>
             )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Codeforces Handle</label>
+              <input
+                type="text"
+                value={form.cfHandle}
+                onChange={(e) => setForm({ ...form, cfHandle: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 focus:outline-none focus:border-cyan-500 transition-colors"
+                required
+                placeholder="e.g. tourist"
+              />
+              <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                Your solves will be verified automatically
+                <a
+                  href="https://codeforces.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-cyan-500 hover:text-cyan-400"
+                >
+                  <ExternalLink className="w-3 h-3 inline" />
+                </a>
+              </p>
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Username</label>

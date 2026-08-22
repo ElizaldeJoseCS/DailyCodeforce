@@ -12,7 +12,8 @@ import {
   Copy,
   Check,
   CheckCircle2,
-  Circle,
+  ShieldCheck,
+  Loader2,
 } from "lucide-react";
 import Markdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
@@ -132,31 +133,41 @@ function CodeBlock({ children, className, ..._props }: any) {
 
 export default function ProblemPageClient({
   daily,
-  isSolved,
+  isSolved: initialSolved,
+  isVerified: initialVerified,
 }: {
   daily: DailyProblem;
   isSolved: boolean;
+  isVerified: boolean;
 }) {
   const { data: session } = useSession();
   const [showAnswer, setShowAnswer] = useState(false);
-  const [solved, setSolved] = useState(isSolved);
-  const [solving, setSolving] = useState(false);
+  const [solved, setSolved] = useState(initialSolved);
+  const [verified, setVerified] = useState(initialVerified);
+  const [verifying, setVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState("");
 
-  const handleSolve = async () => {
-    if (!session || solved || solving) return;
-    setSolving(true);
+  const handleVerify = async () => {
+    if (!session || solved || verifying) return;
+    setVerifying(true);
+    setVerifyError("");
     try {
-      const res = await fetch("/api/progress", {
+      const res = await fetch("/api/progress/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: (session.user as Record<string, string>).id,
-          dailyProblemId: daily.id,
-        }),
+        body: JSON.stringify({ dailyProblemId: daily.id }),
       });
-      if (res.ok) setSolved(true);
+      const data = await res.json();
+      if (res.ok) {
+        setSolved(true);
+        setVerified(true);
+      } else {
+        setVerifyError(data.error || "Verification failed");
+      }
+    } catch {
+      setVerifyError("Failed to verify. Try again.");
     } finally {
-      setSolving(false);
+      setVerifying(false);
     }
   };
 
@@ -175,8 +186,14 @@ export default function ProblemPageClient({
           <div className="flex items-center gap-3 mb-4">
             <TierBadge tier={daily.tier} />
             <RatingBadge rating={daily.problem.rating} />
-            {solved && (
+            {solved && verified && (
               <span className="inline-flex items-center gap-1 text-xs text-green-400">
+                <ShieldCheck className="w-4 h-4" />
+                Verified
+              </span>
+            )}
+            {solved && !verified && (
+              <span className="inline-flex items-center gap-1 text-xs text-yellow-400">
                 <CheckCircle2 className="w-4 h-4" />
                 Solved
               </span>
@@ -209,22 +226,36 @@ export default function ProblemPageClient({
 
             {session && !solved && (
               <button
-                onClick={handleSolve}
-                disabled={solving}
+                onClick={handleVerify}
+                disabled={verifying}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600/20 border border-green-500/30 hover:bg-green-600/30 text-green-400 font-medium text-sm transition-colors disabled:opacity-50"
               >
-                <Circle className="w-4 h-4" />
-                {solving ? "Marking..." : "Mark as Solved"}
+                {verifying ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ShieldCheck className="w-4 h-4" />
+                )}
+                {verifying ? "Checking Codeforces..." : "Verify Submission"}
               </button>
             )}
 
             {solved && (
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 font-medium text-sm">
-                <CheckCircle2 className="w-4 h-4" />
-                Completed
+                {verified ? (
+                  <ShieldCheck className="w-4 h-4" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4" />
+                )}
+                {verified ? "Verified on Codeforces" : "Marked as Solved"}
               </span>
             )}
           </div>
+
+          {verifyError && (
+            <div className="mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              {verifyError}
+            </div>
+          )}
         </div>
 
         <div className="p-8 border-b border-gray-800">
