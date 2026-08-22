@@ -7,7 +7,7 @@ function getResend() {
 export async function sendVerificationEmail(email: string, code: string) {
   const resend = getResend();
   await resend.emails.send({
-    from: "DailyCodeforce <onboarding@resend.dev>",
+    from: "DailyCodeforce <noreply@codeforces-practice.com>",
     to: email,
     subject: "Verify your email - DailyCodeforce",
     html: `
