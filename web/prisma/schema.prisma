@@ -8,14 +8,39 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  discordId String   @unique
-  username  String
-  avatarUrl String?
-  createdAt DateTime @default(now())
-  progress  UserProgress[]
+  id             String         @id @default(cuid())
+  email          String         @unique
+  passwordHash   String?
+  username       String         @unique
+  displayName    String?
+  bio            String?        @default("")
+  avatarUrl      String?
+  bannerUrl      String?
+  backgroundColor String?       @default("#030712")
+  accentColor    String?        @default("#22d3ee")
+  discordId      String?        @unique
+  discordAvatar  String?
+  role           String         @default("user")
+  currentStreak  Int            @default(0)
+  longestStreak  Int            @default(0)
+  lastSolvedDate DateTime?
+  totalSolved    Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  progress       UserProgress[]
+  sessions       Session[]
 
   @@map("users")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+
+  @@map("sessions")
 }
 
 model Problem {
@@ -41,7 +66,7 @@ model DailyProblem {
   date          DateTime
   editorialUrl  String?
   editorial     String?
-  createdAt     DateTime @default(now())
+  createdAt     DateTime       @default(now())
   progress      UserProgress[]
 
   @@unique([tier, date])

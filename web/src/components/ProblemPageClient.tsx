@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import {
   ExternalLink,
   ArrowLeft,
@@ -10,6 +11,8 @@ import {
   EyeOff,
   Copy,
   Check,
+  CheckCircle2,
+  Circle,
 } from "lucide-react";
 import Markdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
@@ -91,9 +94,9 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function CodeBlock({ children, className }: any) {
-  const match = /language-(\w+)/.exec(className);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
+function CodeBlock({ children, className, ..._props }: any) {
+  const match = className ? /language-(\w+)/.exec(className) : null;
   const language = match ? match[1] : null;
   const code =
     typeof children === "string"
@@ -127,8 +130,35 @@ function CodeBlock({ children, className }: any) {
   );
 }
 
-export default function ProblemPageClient({ daily }: { daily: DailyProblem }) {
+export default function ProblemPageClient({
+  daily,
+  isSolved,
+}: {
+  daily: DailyProblem;
+  isSolved: boolean;
+}) {
+  const { data: session } = useSession();
   const [showAnswer, setShowAnswer] = useState(false);
+  const [solved, setSolved] = useState(isSolved);
+  const [solving, setSolving] = useState(false);
+
+  const handleSolve = async () => {
+    if (!session || solved || solving) return;
+    setSolving(true);
+    try {
+      const res = await fetch("/api/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: (session.user as Record<string, string>).id,
+          dailyProblemId: daily.id,
+        }),
+      });
+      if (res.ok) setSolved(true);
+    } finally {
+      setSolving(false);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
@@ -145,6 +175,12 @@ export default function ProblemPageClient({ daily }: { daily: DailyProblem }) {
           <div className="flex items-center gap-3 mb-4">
             <TierBadge tier={daily.tier} />
             <RatingBadge rating={daily.problem.rating} />
+            {solved && (
+              <span className="inline-flex items-center gap-1 text-xs text-green-400">
+                <CheckCircle2 className="w-4 h-4" />
+                Solved
+              </span>
+            )}
           </div>
 
           <h1 className="text-3xl font-bold mb-4">{daily.problem.name}</h1>
@@ -160,7 +196,7 @@ export default function ProblemPageClient({ daily }: { daily: DailyProblem }) {
             ))}
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <a
               href={daily.problem.url}
               target="_blank"
@@ -170,6 +206,24 @@ export default function ProblemPageClient({ daily }: { daily: DailyProblem }) {
               <ExternalLink className="w-4 h-4" />
               Solve on Codeforces
             </a>
+
+            {session && !solved && (
+              <button
+                onClick={handleSolve}
+                disabled={solving}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600/20 border border-green-500/30 hover:bg-green-600/30 text-green-400 font-medium text-sm transition-colors disabled:opacity-50"
+              >
+                <Circle className="w-4 h-4" />
+                {solving ? "Marking..." : "Mark as Solved"}
+              </button>
+            )}
+
+            {solved && (
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 font-medium text-sm">
+                <CheckCircle2 className="w-4 h-4" />
+                Completed
+              </span>
+            )}
           </div>
         </div>
 

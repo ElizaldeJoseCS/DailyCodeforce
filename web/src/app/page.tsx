@@ -10,6 +10,7 @@ type DailyEntry = {
   tier: Tier;
   id: string;
   editorialUrl: string | null;
+  editorial: string | null;
   problem: {
     name: string;
     rating: number;
@@ -36,6 +37,7 @@ async function getTodayProblems(): Promise<DailyEntry[]> {
       tier,
       id: found.id,
       editorialUrl: found.editorialUrl,
+      editorial: found.editorial,
       problem: found.problem,
     };
   });
@@ -123,6 +125,7 @@ export default async function HomePage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 text-xs text-gray-500 hover:text-cyan-400 transition-colors"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <ExternalLink className="w-3 h-3" />
                   Codeforces

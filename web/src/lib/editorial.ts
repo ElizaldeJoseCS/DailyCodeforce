@@ -2,6 +2,18 @@ import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+const CP_TEMPLATE = `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    // Your solution here
+
+    return 0;
+}`;
+
 export async function generateEditorial(
   problemName: string,
   tags: string[],
@@ -40,7 +52,11 @@ Step-by-step algorithm description.
 
 ## Solution (C++)
 \`\`\`cpp
-// Complete working C++ solution
+${CP_TEMPLATE}
+
+// Paste this template into Codeforces, then write your solution inside main().
+// The template includes fast I/O and common competitive programming utilities.
+// Replace "// Your solution here" with your actual logic.
 \`\`\`
 
 Keep it clear and educational. Assume the reader understands basic data structures but may not know the specific algorithm technique needed.`,
