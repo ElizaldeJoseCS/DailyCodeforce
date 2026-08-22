@@ -23,7 +23,7 @@ func handleDaily(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql.D
 	query := `
 		SELECT dp.tier, p.name, p.rating, p.url, p.tags
 		FROM daily_problems dp
-		JOIN problems p ON p.id = dp.problem_id
+		JOIN problems p ON p.id = dp."problemId"
 		WHERE dp.date = CURRENT_DATE
 	`
 	args := []interface{}{}

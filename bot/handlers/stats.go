@@ -11,7 +11,7 @@ func handleStats(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql.D
 	userID := i.Member.User.ID
 
 	var username string
-	err := db.QueryRow(`SELECT username FROM users WHERE discord_id = $1`, userID).Scan(&username)
+	err := db.QueryRow(`SELECT username FROM users WHERE "discordId" = $1`, userID).Scan(&username)
 	if err == sql.ErrNoRows {
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -25,17 +25,17 @@ func handleStats(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql.D
 	var totalSolved int
 	db.QueryRow(`
 		SELECT COUNT(*) FROM user_progress up
-		JOIN users u ON u.id = up.user_id
-		WHERE u.discord_id = $1
+		JOIN users u ON u.id = up."userId"
+		WHERE u."discordId" = $1
 	`, userID).Scan(&totalSolved)
 
 	tierCounts := map[string]int{}
 	rows, err := db.Query(`
 		SELECT dp.tier, COUNT(*) as cnt
 		FROM user_progress up
-		JOIN users u ON u.id = up.user_id
-		JOIN daily_problems dp ON dp.id = up.daily_problem_id
-		WHERE u.discord_id = $1
+		JOIN users u ON u.id = up."userId"
+		JOIN daily_problems dp ON dp.id = up."dailyProblemId"
+		WHERE u."discordId" = $1
 		GROUP BY dp.tier
 	`, userID)
 	if err == nil {
@@ -54,9 +54,6 @@ func handleStats(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql.D
 	for _, tier := range []string{"beginner", "intermediate", "advanced", "expert"} {
 		emoji := tierEmojiMap()[tier]
 		count := tierCounts[tier]
-		if count == 0 {
-			count = 0
-		}
 		description += fmt.Sprintf("%s %s: **%d**\n", emoji, tier, count)
 	}
 
@@ -76,10 +73,10 @@ func handleStats(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql.D
 
 func handleLeaderboard(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql.DB) {
 	rows, err := db.Query(`
-		SELECT u.username, u.avatar_url, COUNT(up.id) as solved
+		SELECT u.username, u."avatarUrl", COUNT(up.id) as solved
 		FROM user_progress up
-		JOIN users u ON u.id = up.user_id
-		GROUP BY u.id, u.username, u.avatar_url
+		JOIN users u ON u.id = up."userId"
+		GROUP BY u.id, u.username, u."avatarUrl"
 		ORDER BY solved DESC
 		LIMIT 10
 	`)

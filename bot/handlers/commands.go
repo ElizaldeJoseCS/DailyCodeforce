@@ -12,7 +12,7 @@ import (
 var registeredCommands []*discordgo.ApplicationCommand
 
 func OnReady(s *discordgo.Session, m *discordgo.Ready) {
-	log.Printf("Logged in as %s#%s", m.User.Username, m.User.Discriminator)
+	log.Printf("Logged in as %s", m.User.Username)
 }
 
 func OnInteractionCreate(db *sql.DB) func(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -122,7 +122,7 @@ func SendDailyNotification(s *discordgo.Session, db *sql.DB, channelID string) e
 	rows, err := db.Query(`
 		SELECT dp.tier, p.name, p.rating, p.url, p.tags
 		FROM daily_problems dp
-		JOIN problems p ON p.id = dp.problem_id
+		JOIN problems p ON p.id = dp."problemId"
 		WHERE dp.date = CURRENT_DATE
 		ORDER BY dp.tier
 	`)
@@ -131,42 +131,48 @@ func SendDailyNotification(s *discordgo.Session, db *sql.DB, channelID string) e
 	}
 	defer rows.Close()
 
-	embeds := []*discordgo.MessageEmbed{}
+	type problem struct {
+		tier, name, url, tags string
+		rating                int
+	}
+
+	var problems []problem
+
 	for rows.Next() {
-		var tier, name, url, tags string
-		var rating int
-		if err := rows.Scan(&tier, &name, &rating, &url, &tags); err != nil {
+		var p problem
+		if err := rows.Scan(&p.tier, &p.name, &p.rating, &p.url, &p.tags); err != nil {
 			log.Printf("Error scanning row: %v", err)
 			continue
 		}
-
-		emoji := tierEmoji[tier]
-		label := tierLabel[tier]
-
-		embeds = append(embeds, &discordgo.MessageEmbed{
-			Title:       fmt.Sprintf("%s %s — %s", emoji, name, label),
-			URL:         url,
-			Description: fmt.Sprintf("**Rating:** %d\n**Tags:** %s", rating, tags),
-			Color:       tierColorInt(tier),
-		})
+		problems = append(problems, p)
 	}
 
-	if len(embeds) == 0 {
+	if len(problems) == 0 {
 		return nil
 	}
 
-	_, err = s.ChannelMessageSendEmbed(channelID, &discordgo.MessageEmbed{
-		Title:       "📋 Today's DailyCodeforce Problems",
-		Description: "Here are today's challenges across all difficulty levels. Good luck!",
-		Color:       0x06b6d4,
-		Fields:      nil,
-	})
-
-	for _, e := range embeds {
-		s.ChannelMessageSendEmbed(channelID, e)
+	description := ""
+	for _, p := range problems {
+		emoji := tierEmoji[p.tier]
+		label := tierLabel[p.tier]
+		description += fmt.Sprintf("%s **%s** — %s\nRating: %d | [Solve](%s)\n\n", emoji, p.name, label, p.rating, p.url)
 	}
 
-	return err
+	content := fmt.Sprintf("📋 **Today's DailyCodeforce Problems**\n\n%sGood luck!", description)
+
+	thread, err := s.ThreadStart(channelID, "📋 Daily Problems", discordgo.ThreadPublic, 10080)
+	if err != nil {
+		log.Printf("Failed to create forum thread: %v", err)
+		return err
+	}
+
+	_, err = s.ChannelMessageSend(thread.ID, content)
+	if err != nil {
+		log.Printf("Failed to send message to thread: %v", err)
+		return err
+	}
+
+	return nil
 }
 
 func tierColorInt(tier string) int {

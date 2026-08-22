@@ -12,7 +12,7 @@ func handleSolve(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql.D
 	tier := i.ApplicationCommandData().Options[0].StringValue()
 
 	var userDBID string
-	err := db.QueryRow(`SELECT id FROM users WHERE discord_id = $1`, userID).Scan(&userDBID)
+	err := db.QueryRow(`SELECT id FROM users WHERE "discordId" = $1`, userID).Scan(&userDBID)
 	if err == sql.ErrNoRows {
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -25,8 +25,8 @@ func handleSolve(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql.D
 
 	var dailyProblemID string
 	err = db.QueryRow(`
-		SELECT dp.id FROM daily_problems dp
-		WHERE dp.tier = $1 AND dp.date = CURRENT_DATE
+		SELECT id FROM daily_problems
+		WHERE tier = $1 AND date = CURRENT_DATE
 	`, tier).Scan(&dailyProblemID)
 	if err == sql.ErrNoRows {
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -41,7 +41,7 @@ func handleSolve(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql.D
 	var existing string
 	err = db.QueryRow(`
 		SELECT id FROM user_progress
-		WHERE user_id = $1 AND daily_problem_id = $2
+		WHERE "userId" = $1 AND "dailyProblemId" = $2
 	`, userDBID, dailyProblemID).Scan(&existing)
 	if err == nil {
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -54,7 +54,7 @@ func handleSolve(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql.D
 	}
 
 	_, err = db.Exec(`
-		INSERT INTO user_progress (id, user_id, daily_problem_id, solved_at)
+		INSERT INTO user_progress (id, "userId", "dailyProblemId", "solvedAt")
 		VALUES (gen_random_uuid()::text, $1, $2, NOW())
 	`, userDBID, dailyProblemID)
 	if err != nil {

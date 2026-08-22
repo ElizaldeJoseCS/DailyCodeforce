@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import {
@@ -71,40 +71,18 @@ function RatingBadge({ rating }: { rating: number }) {
   );
 }
 
-function CopyButton({ text }: { text: string }) {
+function CodeBlock({ children, className, ..._props }: any) {
+  const codeRef = useRef<HTMLElement>(null);
   const [copied, setCopied] = useState(false);
+  const match = className ? /language-(\w+)/.exec(className) : null;
+  const language = match ? match[1] : null;
 
-  const handleCopy = async () => {
+  const handleCopy = useCallback(async () => {
+    const text = codeRef.current?.textContent || "";
     await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <button
-      onClick={handleCopy}
-      className="absolute top-2 right-2 p-1.5 rounded-md bg-gray-700/50 hover:bg-gray-600/50 text-gray-400 hover:text-gray-200 transition-colors"
-      title="Copy code"
-    >
-      {copied ? (
-        <Check className="w-4 h-4 text-green-400" />
-      ) : (
-        <Copy className="w-4 h-4" />
-      )}
-    </button>
-  );
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
-function CodeBlock({ children, className, ..._props }: any) {
-  const match = className ? /language-(\w+)/.exec(className) : null;
-  const language = match ? match[1] : null;
-  const code =
-    typeof children === "string"
-      ? children
-      : typeof children === "object" && children !== null && "props" in children
-        ? String((children as { props?: { children?: string } }).props?.children ?? "")
-        : "";
+  }, []);
 
   if (!language) {
     return (
@@ -121,9 +99,19 @@ function CodeBlock({ children, className, ..._props }: any) {
           {language.toUpperCase()}
         </span>
       </div>
-      <CopyButton text={code} />
+      <button
+        onClick={handleCopy}
+        className="absolute top-2 right-2 z-10 p-1.5 rounded-md bg-gray-700/50 hover:bg-gray-600/50 text-gray-400 hover:text-gray-200 transition-colors"
+        title="Copy code"
+      >
+        {copied ? (
+          <Check className="w-4 h-4 text-green-400" />
+        ) : (
+          <Copy className="w-4 h-4" />
+        )}
+      </button>
       <pre className={className}>
-        <code className={className}>
+        <code ref={codeRef} className={className}>
           {children}
         </code>
       </pre>
