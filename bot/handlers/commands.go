@@ -204,7 +204,7 @@ func SendDailyNotification(s *discordgo.Session, db *sql.DB, channelID string) e
 			Title:       fmt.Sprintf("%s %s (Rating: %d)", emoji, p.name, p.rating),
 			URL:         p.url,
 			Color:       color,
-			Description: fmt.Sprintf("**Tags:** %s\n⏱ 1s · 💾 256MB", p.tags),
+			Description: fmt.Sprintf("**Tags:** %s", p.tags),
 		}
 
 		if scrapeErr != nil {
@@ -214,6 +214,10 @@ func SendDailyNotification(s *discordgo.Session, db *sql.DB, channelID string) e
 				Value: "Full statement couldn't be fetched. [View on Codeforces →](" + p.url + ")",
 			})
 		} else {
+			if ps.TimeLimit != "" || ps.MemLimit != "" {
+				embed.Description += fmt.Sprintf("\n⏱ %s · 💾 %s", ps.TimeLimit, ps.MemLimit)
+			}
+
 			if ps.Statement != "" {
 				statement := ps.Statement
 				if len(statement) > 1024 {

@@ -81,10 +81,45 @@ func ScrapeProblem(contestID int, index string) (*ProblemStatement, error) {
 	ps.TimeLimit = cleanText(problemDiv.Find("div.header").Find("div.time-limit").Text())
 	ps.MemLimit = cleanText(problemDiv.Find("div.header").Find("div.memory-limit").Text())
 
-	ps.Statement = cleanText(problemDiv.Find("div.header").Next().Text())
+	// Statement: collect all sibling paragraphs between header and input-specification
+	header := problemDiv.Find("div.header")
+	header.Each(func(_ int, h *goquery.Selection) {
+		for _, sib := range h.NextAll().Nodes {
+			sel := goquery.NewDocumentFromNode(sib)
+			cls, _ := sel.Attr("class")
+			if strings.Contains(cls, "input-specification") || strings.Contains(cls, "output-specification") || strings.Contains(cls, "sample-tests") || strings.Contains(cls, "note") {
+				break
+			}
+			text := strings.TrimSpace(sel.Text())
+			if text != "" {
+				if ps.Statement != "" {
+					ps.Statement += "\n\n"
+				}
+				ps.Statement += text
+			}
+		}
+	})
 
-	ps.Input = cleanText(problemDiv.Find("div.input-specification").Text())
-	ps.Output = cleanText(problemDiv.Find("div.output-specification").Text())
+	// Input spec: skip the section-title div, only get the paragraph content
+	inputSpecDiv := problemDiv.Find("div.input-specification")
+	var inputParts []string
+	inputSpecDiv.Find("p").Each(func(_ int, p *goquery.Selection) {
+		text := strings.TrimSpace(p.Text())
+		if text != "" {
+			inputParts = append(inputParts, text)
+		}
+	})
+	ps.Input = strings.Join(inputParts, "\n")
+
+	outputSpecDiv := problemDiv.Find("div.output-specification")
+	var outputParts []string
+	outputSpecDiv.Find("p").Each(func(_ int, p *goquery.Selection) {
+		text := strings.TrimSpace(p.Text())
+		if text != "" {
+			outputParts = append(outputParts, text)
+		}
+	})
+	ps.Output = strings.Join(outputParts, "\n")
 
 	problemDiv.Find("div.sample-test").Each(func(i int, s *goquery.Selection) {
 		inputs := s.Find("div.input pre")
@@ -94,12 +129,12 @@ func ScrapeProblem(contestID int, index string) (*ProblemStatement, error) {
 			count = outputs.Length()
 		}
 		for j := 0; j < count; j++ {
-			input := inputs.Eq(j).Text()
-			output := outputs.Eq(j).Text()
+			input := cleanPreText(inputs.Eq(j).Text())
+			output := cleanPreText(outputs.Eq(j).Text())
 			if input != "" || output != "" {
 				ps.Examples = append(ps.Examples, Example{
-					Input:  strings.TrimSpace(input),
-					Output: strings.TrimSpace(output),
+					Input:  input,
+					Output: output,
 				})
 			}
 		}
@@ -129,4 +164,16 @@ func cleanText(s string) string {
 		}
 	}
 	return strings.Join(cleaned, "\n")
+}
+
+func cleanPreText(s string) string {
+	s = strings.TrimSpace(s)
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	s = strings.ReplaceAll(s, "$$$", "")
+	lines := strings.Split(s, "\n")
+	var cleaned []string
+	for _, line := range lines {
+		cleaned = append(cleaned, strings.TrimRight(line, " \t"))
+	}
+	return strings.TrimRight(strings.Join(cleaned, "\n"), "\n")
 }
