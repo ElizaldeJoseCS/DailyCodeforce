@@ -7,17 +7,20 @@ import * as cheerio from "cheerio";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const envPath = resolve(__dirname, "../.env");
-const env = Object.fromEntries(
-  readFileSync(envPath, "utf-8")
-    .split("\n")
-    .filter((l) => l.includes("=") && !l.startsWith("#"))
-    .map((l) => {
-      const [k, ...v] = l.split("=");
-      return [k.trim(), v.join("=").trim()];
-    })
-);
+const dbUrl = process.env.DATABASE_URL || (() => {
+  const envVars = Object.fromEntries(
+    readFileSync(envPath, "utf-8")
+      .split("\n")
+      .filter((l) => l.includes("=") && !l.startsWith("#"))
+      .map((l) => {
+        const [k, ...v] = l.split("=");
+        return [k.trim(), v.join("=").trim()];
+      })
+  );
+  return envVars.DATABASE_URL;
+})();
 
-const adapter = new PrismaPg({ connectionString: env.DATABASE_URL });
+const adapter = new PrismaPg({ connectionString: dbUrl! });
 const prisma = new PrismaClient({ adapter });
 
 async function scrapeTestCases(contestId: number, index: string) {
