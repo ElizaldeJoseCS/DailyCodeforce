@@ -353,6 +353,19 @@ export default function ProblemPageClient({
 
           {activeTab === "submit" && (
             <div className="p-6">
+              <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm">
+                This judge only runs the visible sample test cases from Codeforces.
+                Once your solution passes here, submit it on{" "}
+                <a
+                  href={daily.problem.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-amber-300"
+                >
+                  Codeforces
+                </a>{" "}
+                to verify against the full test suite.
+              </div>
               <SubmitClient problemId={daily.problem.id} />
             </div>
           )}

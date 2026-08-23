@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { ProblemStatement } from "./codeforces";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -7,9 +8,41 @@ export async function generateEditorial(
   tags: string[],
   rating: number,
   contestId: number,
-  index: string
+  index: string,
+  statement?: ProblemStatement | null
 ): Promise<string> {
   const tagStr = tags.join(", ");
+
+  let problemContext = `**Problem:** ${problemName} (Contest ${contestId}, Problem ${index})
+**Difficulty:** ${rating}
+**Tags:** ${tagStr}`;
+
+  if (statement) {
+    problemContext += `
+
+## Full Problem Statement
+
+${statement.statement}
+
+**Input:** ${statement.inputSpec}
+
+**Output:** ${statement.outputSpec}
+
+**Time Limit:** ${statement.timeLimit}
+**Memory Limit:** ${statement.memoryLimit}
+
+**Examples:**
+${statement.examples.map((ex, i) => `Example ${i + 1}:
+Input:
+${ex.input}
+Output:
+${ex.output}`).join("\n\n")}`;
+
+    if (statement.note) {
+      problemContext += `\n\n**Note:** ${statement.note}`;
+    }
+  }
+
   const response = await openai.chat.completions.create({
     model: "gpt-4o",
     temperature: 0.3,
@@ -23,9 +56,7 @@ export async function generateEditorial(
         role: "user",
         content: `Write an editorial for this Codeforces problem. IMPORTANT: You must write a COMPLETE, fully working C++ solution. Do NOT write stubs, placeholders, or comments like "// implement your solution here". The code must be ready to submit.
 
-**Problem:** ${problemName} (Contest ${contestId}, Problem ${index})
-**Difficulty:** ${rating}
-**Tags:** ${tagStr}
+${problemContext}
 
 Structure your editorial as:
 ## Intuition
@@ -56,7 +87,7 @@ int main() {
 
 Rules for the code:
 - Include ALL necessary headers (already provided via bits/stdc++.h)
-- Read ALL input exactly as specified in the problem
+- Read ALL input exactly as specified in the problem (IMPORTANT: pay attention to multi-test-case format where the first line is t)
 - Implement the FULL algorithm, not a skeleton
 - Output the answer exactly as the problem requires
 - Include fast I/O (ios::sync_with_stdio(false); cin.tie(nullptr);)

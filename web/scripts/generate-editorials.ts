@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { generateEditorial } from "../src/lib/editorial.js";
+import { scrapeProblemStatement } from "../src/lib/codeforces.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -69,12 +70,17 @@ async function generateEditorials() {
   for (const dp of missing) {
     try {
       console.log(`Generating for "${dp.problem.name}"...`);
+      const statement = await scrapeProblemStatement(
+        dp.problem.cfContestId,
+        dp.problem.cfIndex
+      );
       const editorial = await generateEditorial(
         dp.problem.name,
         dp.problem.tags,
         dp.problem.rating,
         dp.problem.cfContestId,
-        dp.problem.cfIndex
+        dp.problem.cfIndex,
+        statement
       );
 
       await prisma.dailyProblem.update({
@@ -83,6 +89,7 @@ async function generateEditorials() {
       });
 
       console.log(`✅ ${dp.problem.name}`);
+      await new Promise((r) => setTimeout(r, 2000));
     } catch (err) {
       console.error(`❌ ${dp.problem.name}:`, err);
     }

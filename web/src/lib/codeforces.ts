@@ -166,3 +166,51 @@ export async function scrapeTestCases(
   });
   return examples;
 }
+
+export interface ProblemStatement {
+  statement: string;
+  inputSpec: string;
+  outputSpec: string;
+  examples: TestCase[];
+  note: string;
+  timeLimit: string;
+  memoryLimit: string;
+}
+
+export async function scrapeProblemStatement(
+  contestId: number,
+  index: string
+): Promise<ProblemStatement | null> {
+  const { load } = await import("cheerio");
+  const url = `https://codeforces.com/problemset/problem/${contestId}/${index}`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": "DailyCodeforceBot/1.0" },
+  });
+  if (!res.ok) return null;
+  const html = await res.text();
+  const $ = load(html);
+
+  const problemDiv = $("div.problem-statement");
+  if (!problemDiv.length) return null;
+
+  const timeLimit = problemDiv.find("div.time-limit").text().replace("time limit per test", "").trim();
+  const memoryLimit = problemDiv.find("div.memory-limit").text().replace("memory limit per test", "").trim();
+  const statement = problemDiv.find("div.header").next("div").children("p").text().trim();
+  const inputSpec = problemDiv.find("div.input-specification").text().replace("Input", "").trim();
+  const outputSpec = problemDiv.find("div.output-specification").text().replace("Output", "").trim();
+  const note = problemDiv.find("div.note").text().replace("Note", "").trim();
+
+  const examples: TestCase[] = [];
+  $("div.sample-test").each((_, el) => {
+    const inputs = $(el).find("div.input pre");
+    const outputs = $(el).find("div.output pre");
+    const count = Math.max(inputs.length, outputs.length);
+    for (let i = 0; i < count; i++) {
+      const input = $(inputs[i]).text().trim();
+      const output = $(outputs[i]).text().trim();
+      if (input || output) examples.push({ input, output });
+    }
+  });
+
+  return { statement, inputSpec, outputSpec, examples, note, timeLimit, memoryLimit };
+}
