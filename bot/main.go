@@ -101,7 +101,7 @@ func startDailyNotifier(dg *discordgo.Session, db *sql.DB) {
 
 	for {
 		now := time.Now().In(pacific)
-		target := time.Date(now.Year(), now.Month(), now.Day(), 17, 0, 0, 0, pacific)
+		target := time.Date(now.Year(), now.Month(), now.Day(), 17, 5, 0, 0, pacific)
 		if now.After(target) {
 			target = target.Add(24 * time.Hour)
 		}
