@@ -26,12 +26,12 @@ const prisma = new PrismaClient({ adapter });
 function extractPreText($: any, el: any): string {
   const lines: string[] = [];
   let current = "";
-  el.contents().each((_, child) => {
+  el.contents().each((_: any, child: any) => {
     if (child.type === "text") {
-      const t = (child as cheerio.Text).data || "";
+      const t = child.data || "";
       current += t;
     } else if (child.type === "tag") {
-      const tag = (child as cheerio.Element).tagName;
+      const tag = child.tagName;
       if (tag === "br") {
         const trimmed = current.trim();
         if (trimmed) lines.push(trimmed);
