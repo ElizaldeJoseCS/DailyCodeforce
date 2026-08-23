@@ -171,6 +171,7 @@ export async function scrapeTestCases(
 function extractPreText($: any, el: any): string {
   const lines: string[] = [];
   let current = "";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   el.contents().each((_: number, child: any) => {
     if (child.type === "text") {
       const t = child.data || "";
