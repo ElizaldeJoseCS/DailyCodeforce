@@ -23,7 +23,7 @@ const dbUrl = process.env.DATABASE_URL || (() => {
 const adapter = new PrismaPg({ connectionString: dbUrl! });
 const prisma = new PrismaClient({ adapter });
 
-function extractPreText($: cheerio.CheerioAPI, el: cheerio.Cheerio<cheerio.Element>): string {
+function extractPreText($: any, el: any): string {
   const lines: string[] = [];
   let current = "";
   el.contents().each((_, child) => {

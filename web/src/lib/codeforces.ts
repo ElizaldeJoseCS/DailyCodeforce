@@ -167,7 +167,8 @@ export async function scrapeTestCases(
   return examples;
 }
 
-function extractPreText($: cheerio.CheerioAPI, el: cheerio.Cheerio<cheerio.Element>): string {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractPreText($: any, el: any): string {
   const lines: string[] = [];
   let current = "";
   el.contents().each((_, child) => {
