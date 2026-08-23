@@ -36,21 +36,21 @@ async function scrapeTestCases(contestId: number, index: string) {
 }
 
 async function main() {
-  const problems = await prisma.problem.findMany({
-    where: { testCases: null },
-    select: { id: true, cfContestId: true, cfIndex: true, name: true },
-  });
+  const rows = await prisma.$queryRawUnsafe<{ id: string; cfContestId: number; cfIndex: string; name: string }[]>(
+    `SELECT id, "cfContestId", "cfIndex", name FROM problems WHERE "testCases" IS NULL`
+  );
 
-  console.log(`Found ${problems.length} problems without test cases`);
+  console.log(`Found ${rows.length} problems without test cases`);
 
-  for (const p of problems) {
+  for (const p of rows) {
     try {
       const testCases = await scrapeTestCases(p.cfContestId, p.cfIndex);
       if (testCases.length > 0) {
-        await prisma.problem.update({
-          where: { id: p.id },
-          data: { testCases: JSON.parse(JSON.stringify(testCases)) },
-        });
+        await prisma.$executeRawUnsafe(
+          `UPDATE problems SET "testCases" = $1 WHERE id = $2`,
+          JSON.stringify(testCases),
+          p.id
+        );
         console.log(`✅ ${p.name} (${p.cfContestId}${p.cfIndex}): ${testCases.length} tests`);
       } else {
         console.log(`⚠️ ${p.name}: no test cases found`);
