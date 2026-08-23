@@ -86,15 +86,22 @@ func ScrapeProblem(contestID int, index string) (*ProblemStatement, error) {
 	ps.Input = cleanText(problemDiv.Find("div.input-specification").Text())
 	ps.Output = cleanText(problemDiv.Find("div.output-specification").Text())
 
-	problemDiv.Find("div.sample-tests").Each(func(i int, s *goquery.Selection) {
-		inputEl := s.Find("div.input")
-		outputEl := s.Find("div.output")
-
-		input := cleanText(inputEl.Find("pre").Text())
-		output := cleanText(outputEl.Find("pre").Text())
-
-		if input != "" || output != "" {
-			ps.Examples = append(ps.Examples, Example{Input: input, Output: output})
+	problemDiv.Find("div.sample-test").Each(func(i int, s *goquery.Selection) {
+		inputs := s.Find("div.input pre")
+		outputs := s.Find("div.output pre")
+		count := inputs.Length()
+		if outputs.Length() > count {
+			count = outputs.Length()
+		}
+		for j := 0; j < count; j++ {
+			input := inputs.Eq(j).Text()
+			output := outputs.Eq(j).Text()
+			if input != "" || output != "" {
+				ps.Examples = append(ps.Examples, Example{
+					Input:  strings.TrimSpace(input),
+					Output: strings.TrimSpace(output),
+				})
+			}
 		}
 	})
 

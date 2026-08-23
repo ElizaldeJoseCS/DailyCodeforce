@@ -154,10 +154,15 @@ export async function scrapeTestCases(
   const html = await res.text();
   const $ = load(html);
   const examples: TestCase[] = [];
-  $("div.sample-tests").each((_, el) => {
-    const input = $(el).find("div.input pre").text().trim();
-    const output = $(el).find("div.output pre").text().trim();
-    if (input || output) examples.push({ input, output });
+  $("div.sample-test").each((_, el) => {
+    const inputs = $(el).find("div.input pre");
+    const outputs = $(el).find("div.output pre");
+    const count = Math.max(inputs.length, outputs.length);
+    for (let i = 0; i < count; i++) {
+      const input = $(inputs[i]).text().trim();
+      const output = $(outputs[i]).text().trim();
+      if (input || output) examples.push({ input, output });
+    }
   });
   return examples;
 }
