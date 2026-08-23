@@ -1,23 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { fetchAllProblems, problemUrl } from "@/lib/codeforces";
+import { fetchAllProblems, problemUrl, scrapeTestCases } from "@/lib/codeforces";
 import { TIERS, TIER_ORDER } from "@/lib/tiers";
 
 const DEDUP_WINDOW_DAYS = 90;
 const TAG_ROTATION_WINDOW_DAYS = 14;
-
-const PREFERRED_TAGS = [
-  "implementation",
-  "math",
-  "greedy",
-  "brute force",
-  "strings",
-  "sorting",
-  "dp",
-  "data structures",
-  "two pointers",
-  "binary search",
-];
 
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -75,8 +62,9 @@ export async function POST(req: NextRequest) {
     const tagCounts: Record<string, number> = {};
     for (const rp of recentTagProblems) {
       if (!rp.problem.tags) continue;
-      for (const tag of rp.problem.tags.split(",")) {
-        const t = tag.trim().toLowerCase();
+      const tags = Array.isArray(rp.problem.tags) ? rp.problem.tags : [];
+      for (const tag of tags) {
+        const t = String(tag).trim().toLowerCase();
         if (t) tagCounts[t] = (tagCounts[t] || 0) + 1;
       }
     }
@@ -117,6 +105,20 @@ export async function POST(req: NextRequest) {
       },
       update: {},
     });
+
+    if (!problem.testCases) {
+      try {
+        const testCases = await scrapeTestCases(picked.contestId, picked.index);
+        if (testCases.length > 0) {
+          await prisma.problem.update({
+            where: { id: problem.id },
+            data: { testCases: JSON.parse(JSON.stringify(testCases)) },
+          });
+        }
+      } catch (e) {
+        console.error(`Failed to scrape test cases for ${picked.contestId}${picked.index}:`, e);
+      }
+    }
 
     const existingToday = await prisma.dailyProblem.findFirst({
       where: { date: today, tier },

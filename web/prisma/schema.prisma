@@ -58,6 +58,7 @@ model Problem {
   rating        Int
   tags          String[]
   url           String
+  testCases     Json?
   createdAt     DateTime       @default(now())
   dailyProblems DailyProblem[]
 

@@ -1,0 +1,4 @@
+node_modules
+.next
+.git
+bot/node_modules

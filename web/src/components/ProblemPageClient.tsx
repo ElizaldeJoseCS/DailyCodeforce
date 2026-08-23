@@ -14,9 +14,12 @@ import {
   CheckCircle2,
   ShieldCheck,
   Loader2,
+  Code,
+  BookOpen,
 } from "lucide-react";
 import Markdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
+import SubmitClient from "./SubmitClient";
 
 interface DailyProblem {
   id: string;
@@ -25,6 +28,7 @@ interface DailyProblem {
   editorialUrl: string | null;
   editorial: string | null;
   problem: {
+    id: string;
     name: string;
     rating: number;
     tags: string[];
@@ -132,6 +136,7 @@ export default function ProblemPageClient({
 }) {
   const { data: session } = useSession();
   const [showAnswer, setShowAnswer] = useState(false);
+  const [activeTab, setActiveTab] = useState<"editorial" | "submit">("editorial");
   const [solved, setSolved] = useState(initialSolved);
   const [verified, setVerified] = useState(initialVerified);
   const [verifying, setVerifying] = useState(false);
@@ -271,49 +276,84 @@ export default function ProblemPageClient({
         </div>
 
         <div className="border-t border-gray-800">
-          <button
-            onClick={() => setShowAnswer(!showAnswer)}
-            className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-800/50 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              {showAnswer ? (
-                <EyeOff className="w-5 h-5 text-gray-400" />
-              ) : (
-                <Eye className="w-5 h-5 text-cyan-400" />
-              )}
-              <span className="font-semibold text-lg">
-                {showAnswer ? "Hide Editorial" : "Show Editorial"}
-              </span>
-            </div>
-            <span className="text-sm text-gray-500">
-              {showAnswer ? "Click to hide" : "Click to reveal"}
-            </span>
-          </button>
+          <div className="flex border-b border-gray-800">
+            <button
+              onClick={() => { setActiveTab("editorial"); setShowAnswer(false); }}
+              className={`flex-1 flex items-center justify-center gap-2 p-4 text-sm font-medium transition-colors ${
+                activeTab === "editorial"
+                  ? "text-cyan-400 border-b-2 border-cyan-400 bg-gray-800/30"
+                  : "text-gray-500 hover:text-gray-300 hover:bg-gray-800/20"
+              }`}
+            >
+              <BookOpen className="w-4 h-4" />
+              Editorial
+            </button>
+            <button
+              onClick={() => { setActiveTab("submit"); setShowAnswer(false); }}
+              className={`flex-1 flex items-center justify-center gap-2 p-4 text-sm font-medium transition-colors ${
+                activeTab === "submit"
+                  ? "text-emerald-400 border-b-2 border-emerald-400 bg-gray-800/30"
+                  : "text-gray-500 hover:text-gray-300 hover:bg-gray-800/20"
+              }`}
+            >
+              <Code className="w-4 h-4" />
+              Submit
+            </button>
+          </div>
 
-          {showAnswer && daily.editorial && (
-            <div className="px-8 pb-8">
-              <div className="prose prose-invert max-w-none">
-                <Markdown
-                  rehypePlugins={[rehypeHighlight]}
-                  components={{
-                    pre: ({ children }) => <>{children}</>,
-                    code: CodeBlock,
-                  }}
-                >
-                  {daily.editorial}
-                </Markdown>
-              </div>
-              <div className="mt-6 pt-4 border-t border-gray-800">
-                <a
-                  href={daily.problem.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  View on Codeforces
-                </a>
-              </div>
+          {activeTab === "editorial" && (
+            <>
+              <button
+                onClick={() => setShowAnswer(!showAnswer)}
+                className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-800/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  {showAnswer ? (
+                    <EyeOff className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <Eye className="w-5 h-5 text-cyan-400" />
+                  )}
+                  <span className="font-semibold text-lg">
+                    {showAnswer ? "Hide Editorial" : "Show Editorial"}
+                  </span>
+                </div>
+                <span className="text-sm text-gray-500">
+                  {showAnswer ? "Click to hide" : "Click to reveal"}
+                </span>
+              </button>
+
+              {showAnswer && daily.editorial && (
+                <div className="px-8 pb-8">
+                  <div className="prose prose-invert max-w-none">
+                    <Markdown
+                      rehypePlugins={[rehypeHighlight]}
+                      components={{
+                        pre: ({ children }) => <>{children}</>,
+                        code: CodeBlock,
+                      }}
+                    >
+                      {daily.editorial}
+                    </Markdown>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-gray-800">
+                    <a
+                      href={daily.problem.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      View on Codeforces
+                    </a>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTab === "submit" && (
+            <div className="p-6">
+              <SubmitClient problemId={daily.problem.id} />
             </div>
           )}
         </div>

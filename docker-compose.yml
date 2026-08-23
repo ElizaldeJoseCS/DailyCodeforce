@@ -13,8 +13,8 @@ services:
 
   web:
     build:
-      context: ./web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: web/Dockerfile
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://dailycodeforce:${DB_PASSWORD:-dcf_dev_password}@postgres:5432/dailycodeforce?schema=public

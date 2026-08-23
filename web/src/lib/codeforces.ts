@@ -135,3 +135,29 @@ export async function checkAllUserSolves(
 }
 
 export type { CFProblem };
+
+export interface TestCase {
+  input: string;
+  output: string;
+}
+
+export async function scrapeTestCases(
+  contestId: number,
+  index: string
+): Promise<TestCase[]> {
+  const { load } = await import("cheerio");
+  const url = `https://codeforces.com/problemset/problem/${contestId}/${index}`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": "DailyCodeforceBot/1.0" },
+  });
+  if (!res.ok) return [];
+  const html = await res.text();
+  const $ = load(html);
+  const examples: TestCase[] = [];
+  $("div.sample-tests").each((_, el) => {
+    const input = $(el).find("div.input pre").text().trim();
+    const output = $(el).find("div.output pre").text().trim();
+    if (input || output) examples.push({ input, output });
+  });
+  return examples;
+}
