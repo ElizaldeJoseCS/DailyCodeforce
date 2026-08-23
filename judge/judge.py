@@ -4,7 +4,7 @@ import json, os, subprocess, sys, tempfile, shutil, resource
 
 SANITIZED_ENV = {
     "PATH": "/usr/bin:/bin",
-    "HOME": "/tmp",
+    "HOME": "/work",
     "LANG": "C.UTF-8",
 }
 

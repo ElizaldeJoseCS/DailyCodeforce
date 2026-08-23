@@ -41,7 +41,6 @@ services:
       context: .
       dockerfile: judge/Dockerfile
     restart: unless-stopped
-    read_only: true
     security_opt:
       - no-new-privileges:true
     deploy:
@@ -51,7 +50,8 @@ services:
           cpus: "1.0"
           pids: 128
     tmpfs:
-      - /tmp:size=64M
+      - /tmp:size=64M,noexec
+      - /work:size=256M
     networks:
       - internal
 

@@ -14,13 +14,13 @@ MAX_FILE_SIZE = 10 * 1024 * 1024
 
 SANITIZED_ENV = {
     "PATH": "/usr/bin:/bin",
-    "HOME": "/tmp",
+    "HOME": "/work",
     "LANG": "C.UTF-8",
 }
 
 
 def judge(source_code, test_cases):
-    tmpdir = tempfile.mkdtemp()
+    tmpdir = tempfile.mkdtemp(dir="/work")
     try:
         src_path = os.path.join(tmpdir, "solution.cpp")
         with open(src_path, "w") as f:
@@ -117,7 +117,7 @@ def judge(source_code, test_cases):
 
 def judge_internal(source_code, test_cases):
     """Full judge for internal use (editorial validation). Returns input/output."""
-    tmpdir = tempfile.mkdtemp()
+    tmpdir = tempfile.mkdtemp(dir="/work")
     try:
         src_path = os.path.join(tmpdir, "solution.cpp")
         with open(src_path, "w") as f:
