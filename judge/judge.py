@@ -16,7 +16,7 @@ COMPILE_TIMEOUT = 10
 
 
 def judge(source_path, test_cases):
-    tmpdir = tempfile.mkdtemp()
+    tmpdir = tempfile.mkdtemp(dir="/work")
     try:
         binary = os.path.join(tmpdir, "solution")
         comp = subprocess.run(

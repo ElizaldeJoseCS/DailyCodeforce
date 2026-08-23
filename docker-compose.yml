@@ -51,7 +51,7 @@ services:
           pids: 128
     tmpfs:
       - /tmp:size=64M,noexec
-      - /work:size=256M
+      - /work:size=256M,exec
     networks:
       - internal
 
