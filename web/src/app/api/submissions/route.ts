@@ -27,11 +27,13 @@ function checkRateLimit(userId: string): boolean {
 
 setInterval(() => {
   const now = Date.now();
-  for (const [key, val] of rateLimitMap) {
+  const keysToDelete: string[] = [];
+  rateLimitMap.forEach((val, key) => {
     const recent = val.filter((t) => now - t < RATE_LIMIT_WINDOW);
-    if (recent.length === 0) rateLimitMap.delete(key);
+    if (recent.length === 0) keysToDelete.push(key);
     else rateLimitMap.set(key, recent);
-  }
+  });
+  keysToDelete.forEach((k) => rateLimitMap.delete(k));
 }, 60_000);
 
 export async function POST(req: NextRequest) {
