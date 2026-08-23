@@ -169,18 +169,30 @@ export async function scrapeTestCases(
 
 function extractPreText($: cheerio.CheerioAPI, el: cheerio.Cheerio<cheerio.Element>): string {
   const lines: string[] = [];
-  el.children().each((_, child) => {
-    const node = $(child);
+  let current = "";
+  el.contents().each((_, child) => {
     if (child.type === "text") {
-      const t = (child as cheerio.Text).data?.trim();
-      if (t) lines.push(t);
-    } else {
-      const t = node.text().trim();
-      if (t) lines.push(t);
+      const t = (child as cheerio.Text).data || "";
+      current += t;
+    } else if (child.type === "tag") {
+      const tag = (child as cheerio.Element).tagName;
+      if (tag === "br") {
+        const trimmed = current.trim();
+        if (trimmed) lines.push(trimmed);
+        current = "";
+      } else {
+        if (current.trim()) {
+          lines.push(current.trim());
+          current = "";
+        }
+        lines.push($(child).text().trim());
+      }
     }
   });
+  const last = current.trim();
+  if (last) lines.push(last);
   if (lines.length === 0) return el.text().trim();
-  return lines.join("\n");
+  return lines.filter(l => l).join("\n");
 }
 
 export interface ProblemStatement {
