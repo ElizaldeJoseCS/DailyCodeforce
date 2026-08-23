@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 import * as cheerio from "cheerio";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const envPath = resolve(__dirname, "../../.env");
+const envPath = resolve(__dirname, "../.env");
 const env = Object.fromEntries(
   readFileSync(envPath, "utf-8")
     .split("\n")
