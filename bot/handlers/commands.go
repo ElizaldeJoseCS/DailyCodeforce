@@ -204,7 +204,7 @@ func SendDailyNotification(s *discordgo.Session, db *sql.DB, channelID string) e
 			Title:       fmt.Sprintf("%s %s (Rating: %d)", emoji, p.name, p.rating),
 			URL:         p.url,
 			Color:       color,
-			Description: fmt.Sprintf("**Tags:** %s", p.tags),
+			Description: fmt.Sprintf("**Tags:** %s", CleanPgtags(p.tags)),
 		}
 
 		if scrapeErr != nil {

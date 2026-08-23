@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"golang.org/x/net/html"
 	"io"
 	"log"
 	"net/http"
@@ -78,8 +79,8 @@ func ScrapeProblem(contestID int, index string) (*ProblemStatement, error) {
 		return nil, fmt.Errorf("could not find problem statement div")
 	}
 
-	ps.TimeLimit = cleanText(problemDiv.Find("div.header").Find("div.time-limit").Text())
-	ps.MemLimit = cleanText(problemDiv.Find("div.header").Find("div.memory-limit").Text())
+	ps.TimeLimit = cleanPropertyValue(problemDiv.Find("div.header").Find("div.time-limit").Text())
+	ps.MemLimit = cleanPropertyValue(problemDiv.Find("div.header").Find("div.memory-limit").Text())
 
 	// Statement: collect all sibling paragraphs between header and input-specification
 	header := problemDiv.Find("div.header")
@@ -129,8 +130,8 @@ func ScrapeProblem(contestID int, index string) (*ProblemStatement, error) {
 			count = outputs.Length()
 		}
 		for j := 0; j < count; j++ {
-			input := cleanPreText(inputs.Eq(j).Text())
-			output := cleanPreText(outputs.Eq(j).Text())
+			input := extractPreText(inputs.Eq(j))
+			output := extractPreText(outputs.Eq(j))
 			if input != "" || output != "" {
 				ps.Examples = append(ps.Examples, Example{
 					Input:  input,
@@ -140,7 +141,16 @@ func ScrapeProblem(contestID int, index string) (*ProblemStatement, error) {
 		}
 	})
 
-	ps.Note = cleanText(problemDiv.Find("div.note").Text())
+	// Note: skip the section-title div, only get paragraph content
+	noteDiv := problemDiv.Find("div.note")
+	var noteParts []string
+	noteDiv.Find("p").Each(func(_ int, p *goquery.Selection) {
+		text := strings.TrimSpace(p.Text())
+		if text != "" {
+			noteParts = append(noteParts, text)
+		}
+	})
+	ps.Note = strings.Join(noteParts, "\n")
 
 	scrapeCacheMu.Lock()
 	scrapeCache[key] = ps
@@ -166,14 +176,84 @@ func cleanText(s string) string {
 	return strings.Join(cleaned, "\n")
 }
 
-func cleanPreText(s string) string {
+func cleanPropertyValue(s string) string {
 	s = strings.TrimSpace(s)
-	s = strings.ReplaceAll(s, "\r\n", "\n")
 	s = strings.ReplaceAll(s, "$$$", "")
-	lines := strings.Split(s, "\n")
-	var cleaned []string
-	for _, line := range lines {
-		cleaned = append(cleaned, strings.TrimRight(line, " \t"))
+	s = strings.TrimPrefix(s, "time limit per test")
+	s = strings.TrimPrefix(s, "memory limit per test")
+	return strings.TrimSpace(s)
+}
+
+func extractPreText(sel *goquery.Selection) string {
+	var lines []string
+	current := ""
+	sel.Contents().Each(func(_ int, child *goquery.Selection) {
+		if len(child.Nodes) == 0 {
+			return
+		}
+		node := child.Nodes[0]
+		if node.Type == html.TextNode {
+			current += node.Data
+		} else if node.Type == html.ElementNode {
+			tag := goquery.NodeName(child)
+			if tag == "br" {
+				trimmed := strings.TrimSpace(current)
+				if trimmed != "" {
+					lines = append(lines, trimmed)
+				}
+				current = ""
+			} else {
+				if strings.TrimSpace(current) != "" {
+					lines = append(lines, strings.TrimSpace(current))
+					current = ""
+				}
+				text := strings.TrimSpace(child.Text())
+				if text != "" {
+					lines = append(lines, text)
+				}
+			}
+		}
+	})
+	trimmed := strings.TrimSpace(current)
+	if trimmed != "" {
+		lines = append(lines, trimmed)
 	}
-	return strings.TrimRight(strings.Join(cleaned, "\n"), "\n")
+	if len(lines) == 0 {
+		return strings.TrimSpace(sel.Text())
+	}
+	return strings.Join(lines, "\n")
+}
+
+func CleanPgtags(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return ""
+	}
+	if s[0] == '{' {
+		s = s[1:]
+	}
+	if len(s) > 0 && s[len(s)-1] == '}' {
+		s = s[:len(s)-1]
+	}
+	var tags []string
+	current := ""
+	inQuotes := false
+	for _, ch := range s {
+		if ch == '"' {
+			inQuotes = !inQuotes
+		} else if ch == ',' && !inQuotes {
+			t := strings.TrimSpace(current)
+			if t != "" {
+				tags = append(tags, t)
+			}
+			current = ""
+		} else {
+			current += string(ch)
+		}
+	}
+	t := strings.TrimSpace(current)
+	if t != "" {
+		tags = append(tags, t)
+	}
+	return strings.Join(tags, ", ")
 }

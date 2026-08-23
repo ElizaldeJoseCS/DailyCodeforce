@@ -68,7 +68,7 @@ func handleDaily(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql.D
 			URL:   url,
 			Description: fmt.Sprintf(
 				"**Tier:** %s\n**Rating:** %d\n**Tags:** %s",
-				label, rating, tags,
+				label, rating, CleanPgtags(tags),
 			),
 			Color: color,
 		})

@@ -72,7 +72,7 @@ func handleProblem(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql
 			var tags string
 			if dbProblem.Scan(&name, &rating, &tags) == nil {
 				embed.Title = fmt.Sprintf("%s (Rating: %d)", name, rating)
-				embed.Description = fmt.Sprintf("**Tags:** %s", tags)
+				embed.Description = fmt.Sprintf("**Tags:** %s", CleanPgtags(tags))
 
 				if rating < 1200 {
 					ratingColor = 0x10b981
