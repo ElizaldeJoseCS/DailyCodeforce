@@ -1,9 +1,9 @@
 import { PrismaClient } from "../src/generated/prisma/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { readFileSync, writeFileSync, mkdirSync } from "fs";
+import { readFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
-import { generateEditorial } from "../src/lib/editorial.js";
+import { generateValidatedEditorial } from "../src/lib/editorial.js";
 import { scrapeProblemStatement } from "../src/lib/codeforces.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -46,7 +46,7 @@ async function generateEditorials() {
     console.log("Cleared all editorials");
   }
 
-  const where: any = { editorial: null };
+  const where: { editorial: null; date?: Date } = { editorial: null };
   if (todayOnly) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -68,19 +68,24 @@ async function generateEditorials() {
   console.log(`Generating editorials for ${missing.length} problems...`);
 
   for (const dp of missing) {
+    const p = dp.problem;
     try {
-      console.log(`Generating for "${dp.problem.name}"...`);
+      console.log(`Generating for "${p.name}"...`);
       const statement = await scrapeProblemStatement(
-        dp.problem.cfContestId,
-        dp.problem.cfIndex
+        p.cfContestId,
+        p.cfIndex
       );
-      const editorial = await generateEditorial(
-        dp.problem.name,
-        dp.problem.tags,
-        dp.problem.rating,
-        dp.problem.cfContestId,
-        dp.problem.cfIndex,
-        statement
+
+      const testCases = (p.testCases as { input: string; output: string }[] | null) || undefined;
+
+      const editorial = await generateValidatedEditorial(
+        p.name,
+        p.tags,
+        p.rating,
+        p.cfContestId,
+        p.cfIndex,
+        statement,
+        testCases
       );
 
       await prisma.dailyProblem.update({
@@ -88,10 +93,10 @@ async function generateEditorials() {
         data: { editorial },
       });
 
-      console.log(`✅ ${dp.problem.name}`);
+      console.log(`✅ ${p.name}${testCases ? " (validated)" : " (no test cases)"}`);
       await new Promise((r) => setTimeout(r, 2000));
     } catch (err) {
-      console.error(`❌ ${dp.problem.name}:`, err);
+      console.error(`❌ ${p.name}:`, err);
     }
   }
 

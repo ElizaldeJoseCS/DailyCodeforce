@@ -10,6 +10,8 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
 
   web:
     build:
@@ -25,10 +27,33 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       RESEND_API_KEY: ${RESEND_API_KEY}
       ADMIN_SECRET: ${ADMIN_SECRET:-changeme}
+      JUDGE_URL: http://judge:8080
     volumes:
       - uploads:/app/public/uploads
     depends_on:
       - postgres
+      - judge
+    networks:
+      - internal
+
+  judge:
+    build:
+      context: .
+      dockerfile: judge/Dockerfile
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+          pids: 128
+    tmpfs:
+      - /tmp:size=64M
+    networks:
+      - internal
 
   bot:
     build:
@@ -46,6 +71,8 @@ services:
       NOTIFICATION_CHANNEL_ID: ${NOTIFICATION_CHANNEL_ID}
     depends_on:
       - postgres
+    networks:
+      - internal
 
   nginx:
     image: nginx:alpine
@@ -59,6 +86,8 @@ services:
       - uploads:/usr/share/nginx/html/uploads
     depends_on:
       - web
+    networks:
+      - internal
 
   cron:
     build:
@@ -68,10 +97,19 @@ services:
     environment:
       DATABASE_URL: postgresql://dailycodeforce:${DB_PASSWORD:-dcf_dev_password}@postgres:5432/dailycodeforce?schema=public
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      JUDGE_URL: http://judge:8080
     volumes:
       - ./.env:/app/.env:ro
     depends_on:
       - postgres
+      - judge
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
+    internal: false
 
 volumes:
   pgdata:

@@ -2,3 +2,7 @@ node_modules
 .next
 .git
 bot/node_modules
+.env
+.env.*
+!.env.example
+*.md

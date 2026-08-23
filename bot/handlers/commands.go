@@ -37,6 +37,8 @@ func OnInteractionCreate(db *sql.DB) func(s *discordgo.Session, i *discordgo.Int
 			handleLink(s, i, db)
 		case "verify":
 			handleVerify(s, i, db)
+		case "problem":
+			handleProblem(s, i, db)
 		}
 	}
 }
@@ -114,6 +116,18 @@ func RegisterCommands(s *discordgo.Session) {
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        "confirm",
 					Description: "Confirm you've set the verification token on your CF profile",
+				},
+			},
+		},
+		{
+			Name:        "problem",
+			Description: "Look up any Codeforces problem by URL or ID",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "query",
+					Description: "CF URL (e.g. codeforces.com/problemset/problem/1579/E1) or ID (e.g. 1579E1)",
+					Required:    true,
 				},
 			},
 		},
