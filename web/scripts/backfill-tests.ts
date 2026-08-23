@@ -23,6 +23,22 @@ const dbUrl = process.env.DATABASE_URL || (() => {
 const adapter = new PrismaPg({ connectionString: dbUrl! });
 const prisma = new PrismaClient({ adapter });
 
+function extractPreText($: cheerio.CheerioAPI, el: cheerio.Cheerio<cheerio.Element>): string {
+  const lines: string[] = [];
+  el.children().each((_, child) => {
+    const node = $(child);
+    if (child.type === "text") {
+      const t = (child as cheerio.Text).data?.trim();
+      if (t) lines.push(t);
+    } else {
+      const t = node.text().trim();
+      if (t) lines.push(t);
+    }
+  });
+  if (lines.length === 0) return el.text().trim();
+  return lines.join("\n");
+}
+
 async function scrapeTestCases(contestId: number, index: string) {
   const url = `https://codeforces.com/problemset/problem/${contestId}/${index}`;
   const res = await fetch(url, { headers: { "User-Agent": "DailyCodeforceBot/1.0" } });
@@ -35,8 +51,8 @@ async function scrapeTestCases(contestId: number, index: string) {
     const outputs = $(el).find("div.output pre");
     const count = Math.max(inputs.length, outputs.length);
     for (let i = 0; i < count; i++) {
-      const input = $(inputs[i]).text().trim();
-      const output = $(outputs[i]).text().trim();
+      const input = extractPreText($, $(inputs[i]));
+      const output = extractPreText($, $(outputs[i]));
       if (input || output) examples.push({ input, output });
     }
   });
