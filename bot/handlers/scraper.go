@@ -91,7 +91,7 @@ func ScrapeProblem(contestID int, index string) (*ProblemStatement, error) {
 			if strings.Contains(cls, "input-specification") || strings.Contains(cls, "output-specification") || strings.Contains(cls, "sample-tests") || strings.Contains(cls, "note") {
 				break
 			}
-			text := strings.TrimSpace(sel.Text())
+			text := stripMath(strings.TrimSpace(sel.Text()))
 			if text != "" {
 				if ps.Statement != "" {
 					ps.Statement += "\n\n"
@@ -105,7 +105,7 @@ func ScrapeProblem(contestID int, index string) (*ProblemStatement, error) {
 	inputSpecDiv := problemDiv.Find("div.input-specification")
 	var inputParts []string
 	inputSpecDiv.Find("p").Each(func(_ int, p *goquery.Selection) {
-		text := strings.TrimSpace(p.Text())
+		text := stripMath(strings.TrimSpace(p.Text()))
 		if text != "" {
 			inputParts = append(inputParts, text)
 		}
@@ -115,7 +115,7 @@ func ScrapeProblem(contestID int, index string) (*ProblemStatement, error) {
 	outputSpecDiv := problemDiv.Find("div.output-specification")
 	var outputParts []string
 	outputSpecDiv.Find("p").Each(func(_ int, p *goquery.Selection) {
-		text := strings.TrimSpace(p.Text())
+		text := stripMath(strings.TrimSpace(p.Text()))
 		if text != "" {
 			outputParts = append(outputParts, text)
 		}
@@ -141,16 +141,32 @@ func ScrapeProblem(contestID int, index string) (*ProblemStatement, error) {
 		}
 	})
 
-	// Note: skip the section-title div, only get paragraph content
+	// Note: skip the section-title div, get all content (p, ul/li, etc.)
 	noteDiv := problemDiv.Find("div.note")
-	var noteParts []string
-	noteDiv.Find("p").Each(func(_ int, p *goquery.Selection) {
-		text := strings.TrimSpace(p.Text())
-		if text != "" {
-			noteParts = append(noteParts, text)
+	if noteDiv.Length() > 0 {
+		noteNode := noteDiv.Nodes[0]
+		var noteParts []string
+		for child := noteNode.FirstChild; child != nil; child = child.NextSibling {
+			if child.Type == html.ElementNode {
+				cls := ""
+				for _, a := range child.Attr {
+					if a.Key == "class" {
+						cls = a.Val
+						break
+					}
+				}
+				if cls == "section-title" {
+					continue
+				}
+				sel := goquery.NewDocumentFromNode(child)
+				text := stripMath(strings.TrimSpace(sel.Text()))
+				if text != "" {
+					noteParts = append(noteParts, text)
+				}
+			}
 		}
-	})
-	ps.Note = strings.Join(noteParts, "\n")
+		ps.Note = strings.Join(noteParts, "\n")
+	}
 
 	scrapeCacheMu.Lock()
 	scrapeCache[key] = ps
@@ -178,10 +194,16 @@ func cleanText(s string) string {
 
 func cleanPropertyValue(s string) string {
 	s = strings.TrimSpace(s)
-	s = strings.ReplaceAll(s, "$$$", "")
+	s = stripMath(s)
 	s = strings.TrimPrefix(s, "time limit per test")
 	s = strings.TrimPrefix(s, "memory limit per test")
 	return strings.TrimSpace(s)
+}
+
+func stripMath(s string) string {
+	s = strings.ReplaceAll(s, "$$$", "")
+	s = strings.ReplaceAll(s, "$$", "")
+	return s
 }
 
 func extractPreText(sel *goquery.Selection) string {
