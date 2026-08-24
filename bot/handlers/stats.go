@@ -133,12 +133,3 @@ func handleLeaderboard(s *discordgo.Session, i *discordgo.InteractionCreate, db 
 		},
 	})
 }
-
-func tierEmojiMap() map[string]string {
-	return map[string]string{
-		"beginner":     "🟢",
-		"intermediate": "🔵",
-		"advanced":     "🟠",
-		"expert":       "🔴",
-	}
-}

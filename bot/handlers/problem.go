@@ -57,23 +57,15 @@ func handleProblem(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql
 	url := fmt.Sprintf("https://codeforces.com/problemset/problem/%d/%s", contestID, index)
 
 	ratingColor := 0x6b7280
-	embed := &discordgo.MessageEmbed{
-		Title: fmt.Sprintf("%s (Rating: %d)", ps.Statement[:min(len(ps.Statement), 80)], 0),
-		URL:   url,
-		Color: ratingColor,
-	}
+	name := fmt.Sprintf("%d/%s", contestID, index)
+	rating := 0
+	var tags string
 
 	dbProblem, err := db.Query(`SELECT name, rating, tags FROM problems WHERE "cfContestId" = $1 AND "cfIndex" = $2`, contestID, index)
 	if err == nil {
 		defer dbProblem.Close()
 		if dbProblem.Next() {
-			var name string
-			var rating int
-			var tags string
 			if dbProblem.Scan(&name, &rating, &tags) == nil {
-				embed.Title = fmt.Sprintf("%s (Rating: %d)", name, rating)
-				embed.Description = fmt.Sprintf("**Tags:** %s", CleanPgtags(tags))
-
 				if rating < 1200 {
 					ratingColor = 0x10b981
 				} else if rating < 1600 {
@@ -83,87 +75,12 @@ func handleProblem(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql
 				} else {
 					ratingColor = 0xef4444
 				}
-				embed.Color = ratingColor
 			}
 		}
 	}
 
-	if embed.Description == "" {
-		embed.Description = fmt.Sprintf("**Contest:** %d | **Problem:** %s", contestID, index)
-	}
-
-	if ps.TimeLimit != "" {
-		embed.Description += fmt.Sprintf("\n⏱ %s · 💾 %s", ps.TimeLimit, ps.MemLimit)
-	}
-
-	if ps.Statement != "" {
-		statement := ps.Statement
-		if len(statement) > 1024 {
-			statement = statement[:1021] + "..."
-		}
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-			Name:  "📝 Statement",
-			Value: statement,
-		})
-	}
-
-	if ps.Input != "" {
-		input := ps.Input
-		if len(input) > 1024 {
-			input = input[:1021] + "..."
-		}
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-			Name:  "📥 Input",
-			Value: "```\n" + input + "\n```",
-		})
-	}
-
-	if ps.Output != "" {
-		output := ps.Output
-		if len(output) > 1024 {
-			output = output[:1021] + "..."
-		}
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-			Name:  "📤 Output",
-			Value: "```\n" + output + "\n```",
-		})
-	}
-
-	for idx, ex := range ps.Examples {
-		if idx >= 3 {
-			remaining := len(ps.Examples) - 3
-			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-				Name:  fmt.Sprintf("📎 +%d more", remaining),
-				Value: fmt.Sprintf("[View all examples on Codeforces →](%s)", url),
-			})
-			break
-		}
-		example := fmt.Sprintf("**Input:**\n```\n%s\n```\n**Output:**\n```\n%s\n```", ex.Input, ex.Output)
-		if len(example) > 1024 {
-			example = example[:1021] + "..."
-		}
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-			Name:  fmt.Sprintf("📋 Example %d", idx+1),
-			Value: example,
-		})
-	}
-
-	if ps.Note != "" {
-		note := ps.Note
-		if len(note) > 1024 {
-			note = note[:1021] + "..."
-		}
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-			Name:  "💡 Note",
-			Value: note,
-		})
-	}
-
-	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-		Name:  "🔗 Solve it",
-		Value: fmt.Sprintf("[Codeforces →](%s)", url),
-	})
-
+	emoji := ""
+	embed := buildProblemEmbed(name, rating, url, tags, emoji, ratingColor, ps, nil)
 	editInteractionEmbed(s, i, embed)
 }
 
@@ -199,11 +116,4 @@ func editInteractionEmbed(s *discordgo.Session, i *discordgo.InteractionCreate, 
 	s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 		Embeds: &[]*discordgo.MessageEmbed{embed},
 	})
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
