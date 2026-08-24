@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -11,7 +12,8 @@ func handleStats(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql.D
 	userID := i.Member.User.ID
 
 	var username string
-	err := db.QueryRow(`SELECT username FROM users WHERE "discordId" = $1`, userID).Scan(&username)
+	var currentStreak, longestStreak, totalSolved int
+	err := db.QueryRow(`SELECT username, "currentStreak", "longestStreak", "totalSolved" FROM users WHERE "discordId" = $1`, userID).Scan(&username, &currentStreak, &longestStreak, &totalSolved)
 	if err == sql.ErrNoRows {
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -21,13 +23,6 @@ func handleStats(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql.D
 		})
 		return
 	}
-
-	var totalSolved int
-	db.QueryRow(`
-		SELECT COUNT(*) FROM user_progress up
-		JOIN users u ON u.id = up."userId"
-		WHERE u."discordId" = $1
-	`, userID).Scan(&totalSolved)
 
 	tierCounts := map[string]int{}
 	rows, err := db.Query(`
@@ -50,6 +45,14 @@ func handleStats(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql.D
 	}
 
 	description := fmt.Sprintf("**%s** has solved **%d** problems\n\n", username, totalSolved)
+
+	if currentStreak > 0 {
+		fire := strings.Repeat("🔥", min(currentStreak, 10))
+		description += fmt.Sprintf("**🔥 Streak:** %d days (best: %d) %s\n\n", currentStreak, longestStreak, fire)
+	} else if longestStreak > 0 {
+		description += fmt.Sprintf("No active streak. Best streak: **%d** days\n\n", longestStreak)
+	}
+
 	description += "**By Tier:**\n"
 	for _, tier := range []string{"beginner", "intermediate", "advanced", "expert"} {
 		emoji := tierEmojiMap()[tier]
@@ -132,4 +135,11 @@ func handleLeaderboard(s *discordgo.Session, i *discordgo.InteractionCreate, db 
 			},
 		},
 	})
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

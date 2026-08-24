@@ -64,6 +64,144 @@ function getFrameStyle(streak: number): { class: string; label: string } {
   return { class: "", label: "" };
 }
 
+interface Badge {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  color: string;
+}
+
+function getBadges(profile: UserProfile): Badge[] {
+  const badges: Badge[] = [];
+  const p = profile;
+
+  // First solve
+  if (p.totalSolved >= 1) badges.push({ id: "first-blood", name: "First Blood", icon: "🩸", description: "Solved your first problem", color: "text-red-400" });
+
+  // Solve milestones
+  if (p.totalSolved >= 5) badges.push({ id: "solved-5", name: "Getting Started", icon: "⭐", description: "Solved 5 problems", color: "text-yellow-400" });
+  if (p.totalSolved >= 10) badges.push({ id: "solved-10", name: "Double Digits", icon: "🔟", description: "Solved 10 problems", color: "text-yellow-400" });
+  if (p.totalSolved >= 25) badges.push({ id: "solved-25", name: "Dedicated", icon: "💎", description: "Solved 25 problems", color: "text-cyan-400" });
+  if (p.totalSolved >= 50) badges.push({ id: "solved-50", name: "Half Century", icon: "🏆", description: "Solved 50 problems", color: "text-yellow-400" });
+  if (p.totalSolved >= 100) badges.push({ id: "solved-100", name: "Century", icon: "👑", description: "Solved 100 problems", color: "text-purple-400" });
+
+  // Streak badges
+  if (p.currentStreak >= 3) badges.push({ id: "streak-3", name: "On Fire", icon: "🔥", description: "3-day streak", color: "text-orange-400" });
+  if (p.longestStreak >= 7) badges.push({ id: "streak-7", name: "Week Warrior", icon: "⚔️", description: "7-day streak achieved", color: "text-orange-400" });
+  if (p.longestStreak >= 14) badges.push({ id: "streak-14", name: "Fortnight Champion", icon: "🗓️", description: "14-day streak achieved", color: "text-orange-400" });
+  if (p.longestStreak >= 30) badges.push({ id: "streak-30", name: "Monthly Master", icon: "🌟", description: "30-day streak achieved", color: "text-yellow-400" });
+  if (p.longestStreak >= 100) badges.push({ id: "streak-100", name: "Legendary", icon: "🦄", description: "100-day streak achieved", color: "text-purple-400" });
+
+  // Tier badges — check if user has solved problems in each tier
+  const tierSolved = new Set(p.progress.map((pr) => pr.dailyProblem.tier));
+  if (tierSolved.has("beginner")) badges.push({ id: "tier-beginner", name: "Beginner Cleared", icon: "🟢", description: "Solved a beginner problem", color: "text-emerald-400" });
+  if (tierSolved.has("intermediate")) badges.push({ id: "tier-intermediate", name: "Intermediate Done", icon: "🔵", description: "Solved an intermediate problem", color: "text-blue-400" });
+  if (tierSolved.has("advanced")) badges.push({ id: "tier-advanced", name: "Advanced Ace", icon: "🟠", description: "Solved an advanced problem", color: "text-orange-400" });
+  if (tierSolved.has("expert")) badges.push({ id: "tier-expert", name: "Expert Elite", icon: "🔴", description: "Solved an expert problem", color: "text-red-400" });
+
+  // All tiers
+  if (tierSolved.size >= 4) badges.push({ id: "all-tiers", name: "All-Rounder", icon: "🌈", description: "Solved problems in all 4 tiers", color: "text-cyan-400" });
+
+  // Verified badge
+  const verifiedCount = p.progress.filter((pr) => pr.verified).length;
+  if (verifiedCount >= 5) badges.push({ id: "verified-5", name: "Verified Solver", icon: "✅", description: "5 verified solves", color: "text-green-400" });
+  if (verifiedCount >= 20) badges.push({ id: "verified-20", name: "Trusted", icon: "🛡️", description: "20 verified solves", color: "text-green-400" });
+
+  return badges;
+}
+
+function ActivityHeatmap({ progress }: { progress: UserProfile["progress"] }) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Build a map of date -> count for the last 90 days
+  const solveCounts = new Map<string, number>();
+  for (const p of progress) {
+    const d = new Date(p.solvedAt);
+    d.setHours(0, 0, 0, 0);
+    const key = d.toISOString().slice(0, 10);
+    solveCounts.set(key, (solveCounts.get(key) || 0) + 1);
+  }
+
+  // Generate 90 days of data
+  const days: { date: string; count: number }[] = [];
+  for (let i = 89; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    days.push({ date: key, count: solveCounts.get(key) || 0 });
+  }
+
+  const maxCount = Math.max(1, ...days.map((d) => d.count));
+
+  const getColor = (count: number) => {
+    if (count === 0) return "bg-gray-100 dark:bg-gray-800";
+    const ratio = count / maxCount;
+    if (ratio <= 0.25) return "bg-emerald-900/40";
+    if (ratio <= 0.5) return "bg-emerald-700/50";
+    if (ratio <= 0.75) return "bg-emerald-500/60";
+    return "bg-emerald-400";
+  };
+
+  // Group by weeks (7 columns)
+  const weeks: { date: string; count: number }[][] = [];
+  for (let i = 0; i < days.length; i += 7) {
+    weeks.push(days.slice(i, i + 7));
+  }
+
+  const monthLabels: string[] = [];
+  let lastMonth = -1;
+  for (const week of weeks) {
+    const d = new Date(week[0].date);
+    const m = d.getMonth();
+    if (m !== lastMonth) {
+      monthLabels.push(d.toLocaleString("default", { month: "short" }));
+      lastMonth = m;
+    } else {
+      monthLabels.push("");
+    }
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <div className="inline-flex flex-col gap-0.5 min-w-fit">
+        {/* Month labels */}
+        <div className="flex gap-0.5 ml-8">
+          {monthLabels.map((label, i) => (
+            <div key={i} className="text-[10px] text-gray-500 w-[14px] text-center">
+              {label}
+            </div>
+          ))}
+        </div>
+        {/* Grid */}
+        <div className="flex gap-0.5">
+          {/* Day labels */}
+          <div className="flex flex-col gap-0.5 mr-1">
+            {["", "Mon", "", "Wed", "", "Fri", ""].map((label, i) => (
+              <div key={i} className="text-[10px] text-gray-500 h-[14px] leading-[14px] text-right">
+                {label}
+              </div>
+            ))}
+          </div>
+          {/* Weeks */}
+          {weeks.map((week, wi) => (
+            <div key={wi} className="flex flex-col gap-0.5">
+              {week.map((day) => (
+                <div
+                  key={day.date}
+                  className={`w-[14px] h-[14px] rounded-[3px] ${getColor(day.count)} transition-colors`}
+                  title={`${day.date}: ${day.count} solved`}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const params = useParams();
   const { data: session } = useSession();
@@ -271,6 +409,29 @@ export default function ProfilePage() {
         </div>
       )}
 
+      {/* Badges */}
+      {(() => {
+        const badges = getBadges(profile);
+        if (badges.length === 0) return null;
+        return (
+          <div className="mb-8 px-4">
+            <h2 className="text-lg font-semibold mb-3">Achievements</h2>
+            <div className="flex flex-wrap gap-2">
+              {badges.map((b) => (
+                <div
+                  key={b.id}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-sm"
+                  title={b.description}
+                >
+                  <span>{b.icon}</span>
+                  <span className={`font-medium ${b.color}`}>{b.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Stats */}
       {layout.showStats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -294,6 +455,14 @@ export default function ProfilePage() {
             <p className="text-2xl font-bold">{profile.longestStreak}</p>
             <p className="text-xs text-gray-500">Best Streak</p>
           </div>
+        </div>
+      )}
+
+      {/* Activity Heatmap */}
+      {layout.showStats && profile.progress.length > 0 && (
+        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 p-6 mb-8">
+          <h2 className="text-lg font-semibold mb-4">Activity</h2>
+          <ActivityHeatmap progress={profile.progress} />
         </div>
       )}
 
