@@ -17,6 +17,7 @@ import {
   Code,
   BookOpen,
   Clipboard,
+  Flag,
 } from "lucide-react";
 import Markdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
@@ -204,6 +205,7 @@ export default function ProblemPageClient({
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState("");
   const [testCasesCopied, setTestCasesCopied] = useState(false);
+  const [reported, setReported] = useState(false);
 
   const handleCopyTestCases = useCallback(async () => {
     const testCases = daily.problem.testCases;
@@ -215,6 +217,20 @@ export default function ProblemPageClient({
     setTestCasesCopied(true);
     setTimeout(() => setTestCasesCopied(false), 2000);
   }, [daily.problem.testCases]);
+
+  const handleReport = useCallback(async () => {
+    if (reported) return;
+    try {
+      await fetch("/api/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dailyProblemId: daily.id }),
+      });
+      setReported(true);
+    } catch {
+      // ignore
+    }
+  }, [daily.id, reported]);
 
   const handleVerify = async () => {
     if (!session || solved || verifying) return;
@@ -472,7 +488,7 @@ export default function ProblemPageClient({
                       {daily.editorial}
                     </Markdown>
                   </div>
-                  <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-800">
+                  <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
                     <a
                       href={daily.problem.url}
                       target="_blank"
@@ -482,6 +498,19 @@ export default function ProblemPageClient({
                       <ExternalLink className="w-4 h-4" />
                       View on Codeforces
                     </a>
+                    <button
+                      onClick={handleReport}
+                      disabled={reported}
+                      className={`inline-flex items-center gap-1.5 text-xs transition-colors ${
+                        reported
+                          ? "text-gray-400 dark:text-gray-500 cursor-default"
+                          : "text-gray-400 dark:text-gray-500 hover:text-red-400 dark:hover:text-red-400"
+                      }`}
+                      title="Report incorrect editorial"
+                    >
+                      <Flag className="w-3.5 h-3.5" />
+                      {reported ? "Reported" : "Report issue"}
+                    </button>
                   </div>
                 </div>
               )}

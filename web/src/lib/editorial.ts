@@ -7,6 +7,20 @@ const JUDGE_URL = process.env.JUDGE_URL || "http://judge:8080";
 
 const SYSTEM_PROMPT = `You are a competitive programming tutor writing LeetCode-style editorials for Codeforces problems. Write clear, educational solutions. Format everything in markdown. Use ## for sections, \`code\` for inline code, and fenced code blocks for C++ solutions. Be concise but thorough.`;
 
+const TEST_CASE_PROMPT = `You are a competitive programming test case generator. Given a problem statement, generate additional test cases to validate solutions.
+
+Rules:
+- Generate exactly 5 test cases covering edge cases and boundary conditions
+- Each test case must be a valid input that follows the problem's input format
+- Include edge cases: minimum values, maximum values, single elements, empty cases if applicable
+- Include cases that might trip up common wrong approaches
+- Output ONLY valid JSON array, no explanation
+
+Output format (strict JSON):
+[{"input": "...", "output": "..."}]
+
+The output for each test case must be the EXACT correct answer. Think carefully about each answer before outputting.`;
+
 function buildUserPrompt(
   problemName: string,
   tags: string[],
@@ -96,10 +110,36 @@ Keep it clear and educational. Assume the reader understands basic data structur
 
 ${feedback}
 
-Please provide a COMPLETE corrected editorial with a working solution that fixes these errors. The solution must compile and pass all sample test cases.`;
+Please provide a COMPLETE corrected editorial with a working solution that fixes these errors. The solution must compile and pass all test cases.`;
   }
 
   return prompt;
+}
+
+function buildTestCasePrompt(
+  problemName: string,
+  statement: ProblemStatement
+): string {
+  return `Generate 5 additional test cases for this problem:
+
+**Problem:** ${problemName}
+
+**Statement:** ${statement.statement}
+
+**Input format:** ${statement.inputSpec}
+
+**Output format:** ${statement.outputSpec}
+
+**Examples:**
+${statement.examples.map((ex, i) => `Example ${i + 1}:
+Input:
+${ex.input}
+Output:
+${ex.output}`).join("\n\n")}
+
+${statement.note ? `**Note:** ${statement.note}` : ""}
+
+Generate 5 edge-case test cases. Output ONLY the JSON array.`;
 }
 
 export function extractCppCode(markdown: string): string | null {
@@ -108,6 +148,41 @@ export function extractCppCode(markdown: string): string | null {
   const match2 = markdown.match(/```c\+\+\n([\s\S]*?)```/);
   if (match2) return match2[1].trim();
   return null;
+}
+
+export async function generateExtraTestCases(
+  problemName: string,
+  statement: ProblemStatement
+): Promise<{ input: string; output: string }[]> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      temperature: 0.2,
+      max_tokens: 3000,
+      messages: [
+        { role: "system", content: TEST_CASE_PROMPT },
+        { role: "user", content: buildTestCasePrompt(problemName, statement) },
+      ],
+    });
+
+    const content = response.choices[0]?.message?.content || "";
+    // Extract JSON from response (might be wrapped in markdown code blocks)
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return [];
+
+    const testCases = JSON.parse(jsonMatch[0]) as { input: string; output: string }[];
+
+    // Validate format
+    return testCases.filter(
+      (tc) =>
+        typeof tc.input === "string" &&
+        typeof tc.output === "string" &&
+        tc.input.length > 0 &&
+        tc.output.length > 0
+    );
+  } catch {
+    return [];
+  }
 }
 
 export async function validateSolution(
@@ -165,6 +240,27 @@ export async function generateValidatedEditorial(
     { role: "system", content: SYSTEM_PROMPT },
   ];
 
+  // Generate extra validation test cases from the problem statement
+  let extraTestCases: { input: string; output: string }[] = [];
+  if (statement && statement.examples.length > 0) {
+    extraTestCases = await generateExtraTestCases(problemName, statement);
+  }
+
+  // Combine CF samples + AI-generated edge cases for validation
+  const allTestCases = [
+    ...(testCases || []),
+    ...extraTestCases,
+  ];
+
+  // Deduplicate by input
+  const seen = new Set<string>();
+  const validationTestCases = allTestCases.filter((tc) => {
+    const key = tc.input.trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
   let editorial = "";
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -191,7 +287,7 @@ export async function generateValidatedEditorial(
 
     messages.push({ role: "assistant", content: editorial });
 
-    if (!testCases || testCases.length === 0) {
+    if (validationTestCases.length === 0) {
       break;
     }
 
@@ -200,7 +296,7 @@ export async function generateValidatedEditorial(
       break;
     }
 
-    const validation = await validateSolution(cppCode, testCases);
+    const validation = await validateSolution(cppCode, validationTestCases);
 
     if (validation.passed) {
       break;
@@ -209,7 +305,7 @@ export async function generateValidatedEditorial(
     if (attempt < MAX_RETRIES) {
       messages.push({
         role: "user",
-        content: `Your solution failed on attempt ${attempt}. Here are the details:\n\n${validation.details}\n\nPlease provide a COMPLETE corrected solution that passes all test cases. Fix the algorithmic error and output the full editorial again.`,
+        content: `Your solution failed on attempt ${attempt}. Here are the details:\n\n${validation.details}\n\nPlease provide a COMPLETE corrected solution that passes ALL test cases. Fix the algorithmic error and output the full editorial again.`,
       });
     }
   }

@@ -76,6 +76,7 @@ model DailyProblem {
   editorial     String?
   createdAt     DateTime       @default(now())
   progress      UserProgress[]
+  reports       EditorialReport[]
 
   @@unique([tier, date])
   @@index([tier, date])
@@ -93,4 +94,15 @@ model UserProgress {
 
   @@unique([userId, dailyProblemId])
   @@map("user_progress")
+}
+
+model EditorialReport {
+  id             String       @id @default(cuid())
+  dailyProblemId String
+  dailyProblem   DailyProblem @relation(fields: [dailyProblemId], references: [id])
+  userId         String?
+  message        String?
+  createdAt      DateTime     @default(now())
+
+  @@map("editorial_reports")
 }
