@@ -53,11 +53,11 @@ export default async function HomePage() {
         <h1 className="text-4xl font-bold mb-3">
           Daily <span className="text-cyan-400">Codeforces</span> Problems
         </h1>
-        <p className="text-gray-400 text-lg">
+        <p className="text-gray-500 dark:text-gray-400 text-lg">
           Practice competitive programming with curated daily challenges across
           all difficulty levels.
         </p>
-        <p className="text-gray-500 text-sm mt-2">{today}</p>
+        <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">{today}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -70,12 +70,12 @@ export default async function HomePage() {
             return (
               <div
                 key={entry.tier}
-                className="rounded-xl border border-gray-800 bg-gray-900/50 p-6 opacity-50"
+                className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 p-6 opacity-50"
               >
-                <div className="text-sm text-gray-500 mb-2">
+                <div className="text-sm text-gray-400 dark:text-gray-500 mb-2">
                   {config.label} ({config.min}–{config.max})
                 </div>
-                <p className="text-gray-600">No problem assigned today</p>
+                <p className="text-gray-400 dark:text-gray-600">No problem assigned today</p>
               </div>
             );
           }
@@ -84,7 +84,7 @@ export default async function HomePage() {
             <Link
               key={entry.tier}
               href={`/problem/${id}`}
-              className="group rounded-xl border border-gray-800 bg-gray-900/50 p-6 hover:border-gray-700 hover:bg-gray-900 transition-all"
+              className="group rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 p-6 hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
             >
               <div className="flex items-center justify-between mb-3">
                 <span
@@ -107,13 +107,13 @@ export default async function HomePage() {
                 {problem.tags.slice(0, 4).map((tag) => (
                   <span
                     key={tag}
-                    className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400"
+                    className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
                   >
                     {tag}
                   </span>
                 ))}
                 {problem.tags.length > 4 && (
-                  <span className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-500">
+                  <span className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500">
                     +{problem.tags.length - 4}
                   </span>
                 )}

@@ -30,7 +30,7 @@ export default async function ArchivePage() {
     <div className="max-w-6xl mx-auto px-4 py-12">
       <Link
         href="/"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-300 mb-8 transition-colors"
+        className="inline-flex items-center gap-1 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 mb-8 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to today
@@ -53,14 +53,14 @@ export default async function ArchivePage() {
                   return (
                     <div
                       key={tier}
-                      className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 opacity-30"
+                      className="rounded-lg border border-gray-200/50 dark:border-gray-800/50 bg-gray-50 dark:bg-gray-900/30 p-4 opacity-30"
                     >
                       <span
                         className={`text-xs px-2 py-0.5 rounded-full border ${tierColor(tier)}`}
                       >
                         {config.label}
                       </span>
-                      <p className="text-gray-700 text-sm mt-2">
+                      <p className="text-gray-400 dark:text-gray-700 text-sm mt-2">
                         No problem
                       </p>
                     </div>
@@ -71,7 +71,7 @@ export default async function ArchivePage() {
                   <Link
                     key={tier}
                     href={`/problem/${dp.id}`}
-                    className="group rounded-lg border border-gray-800 bg-gray-900/50 p-4 hover:border-gray-700 transition-all"
+                    className="group rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 p-4 hover:border-gray-300 dark:hover:border-gray-700 transition-all"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span

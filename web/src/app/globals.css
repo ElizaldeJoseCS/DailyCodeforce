@@ -19,81 +19,76 @@ body {
   color: var(--foreground);
 }
 
-/* Editorial prose overrides — dark */
+/* Dark mode prose defaults */
 .dark .prose pre,
-.prose pre {
+.dark .prose code {
+  color: #e2e8f0;
+}
+.dark .prose pre {
   @apply rounded-lg border border-gray-800 bg-[#0d1117] p-4 overflow-x-auto;
 }
-
-.dark .prose code,
-.prose code {
+.dark .prose code {
   @apply text-cyan-400;
 }
-
-.dark .prose :not(pre) > code,
-.prose :not(pre) > code {
+.dark .prose :not(pre) > code {
   @apply bg-gray-800/60 px-1.5 py-0.5 rounded text-sm;
 }
-
-.dark .prose h2,
-.prose h2 {
+.dark .prose h2 {
   @apply text-gray-100 border-b border-gray-800 pb-2 mt-8 mb-4;
 }
-
-.dark .prose ul,
-.prose ul {
+.dark .prose ul {
   @apply space-y-1;
 }
-
-.dark .prose li,
-.prose li {
+.dark .prose li {
+  @apply text-gray-300;
+}
+.dark .prose strong {
+  @apply text-gray-100;
+}
+.dark .prose p {
+  @apply text-gray-300 leading-relaxed;
+}
+.dark .prose blockquote {
+  @apply border-l-cyan-500 bg-gray-900/50 px-4 py-2 rounded-r-lg;
+}
+.dark .prose h3 {
+  @apply text-gray-100;
+}
+.dark .prose ol {
   @apply text-gray-300;
 }
 
-.dark .prose strong,
-.prose strong {
-  @apply text-gray-100;
-}
-
-.dark .prose p,
-.prose p {
-  @apply text-gray-300 leading-relaxed;
-}
-
-.dark .prose blockquote,
-.prose blockquote {
-  @apply border-l-cyan-500 bg-gray-900/50 px-4 py-2 rounded-r-lg;
-}
-
-/* Light mode prose overrides */
+/* Light mode prose defaults */
 .light .prose pre {
-  @apply border border-gray-200 bg-gray-50;
+  @apply rounded-lg border border-gray-200 bg-gray-50 p-4 overflow-x-auto;
 }
-
 .light .prose code {
-  @apply text-cyan-600;
+  @apply text-cyan-700;
 }
-
 .light .prose :not(pre) > code {
   @apply bg-gray-100 px-1.5 py-0.5 rounded text-sm;
 }
-
 .light .prose h2 {
-  @apply text-gray-900 border-b border-gray-200;
+  @apply text-gray-900 border-b border-gray-200 pb-2 mt-8 mb-4;
 }
-
+.light .prose h3 {
+  @apply text-gray-900;
+}
+.light .prose ul {
+  @apply space-y-1;
+}
 .light .prose li {
   @apply text-gray-700;
 }
-
+.light .prose ol {
+  @apply text-gray-700;
+}
 .light .prose strong {
   @apply text-gray-900;
 }
-
 .light .prose p {
   @apply text-gray-700 leading-relaxed;
 }
-
 .light .prose blockquote {
   @apply border-l-cyan-500 bg-gray-50 px-4 py-2 rounded-r-lg;
 }

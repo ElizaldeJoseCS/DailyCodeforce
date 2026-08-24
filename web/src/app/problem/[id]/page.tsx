@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
-import { checkUserSolve } from "@/lib/codeforces";
+import { checkUserSolve, scrapeProblemStatement } from "@/lib/codeforces";
 import ProblemPageClient from "@/components/ProblemPageClient";
 
 export const dynamic = "force-dynamic";
@@ -78,9 +78,14 @@ export default async function ProblemPage({
     }
   }
 
+  const statement = await scrapeProblemStatement(
+    daily.problem.cfContestId,
+    daily.problem.cfIndex
+  );
+
   return (
     <ProblemPageClient
-      daily={JSON.parse(JSON.stringify(daily))}
+      daily={JSON.parse(JSON.stringify({ ...daily, statement }))}
       isSolved={isSolved}
       isVerified={isVerified}
     />

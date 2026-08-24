@@ -38,6 +38,15 @@ interface DailyProblem {
     cfIndex: string;
     testCases: { input: string; output: string }[] | null;
   };
+  statement?: {
+    statement: string;
+    inputSpec: string;
+    outputSpec: string;
+    examples: { input: string; output: string }[];
+    note: string;
+    timeLimit: string;
+    memoryLimit: string;
+  } | null;
 }
 
 const TIER_LABELS: Record<string, string> = {
@@ -49,14 +58,14 @@ const TIER_LABELS: Record<string, string> = {
 
 function TierBadge({ tier }: { tier: string }) {
   const colors: Record<string, string> = {
-    beginner: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
-    intermediate: "text-yellow-400 border-yellow-500/30 bg-yellow-500/10",
-    advanced: "text-orange-400 border-orange-500/30 bg-orange-500/10",
-    expert: "text-red-400 border-red-500/30 bg-red-500/10",
+    beginner: "text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
+    intermediate: "text-yellow-600 dark:text-yellow-400 border-yellow-500/30 bg-yellow-500/10",
+    advanced: "text-orange-600 dark:text-orange-400 border-orange-500/30 bg-orange-500/10",
+    expert: "text-red-600 dark:text-red-400 border-red-500/30 bg-red-500/10",
   };
   return (
     <span
-      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${colors[tier] || "text-gray-400 border-gray-600 bg-gray-800"}`}
+      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${colors[tier] || "text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800"}`}
     >
       {TIER_LABELS[tier] || tier}
     </span>
@@ -190,19 +199,19 @@ export default function ProblemPageClient({
         Back to today
       </Link>
 
-      <div className="rounded-xl border border-gray-800 bg-gray-900/50 overflow-hidden">
-        <div className="p-8 border-b border-gray-800">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 overflow-hidden">
+        <div className="p-8 border-b border-gray-200 dark:border-gray-800">
           <div className="flex items-center gap-3 mb-4">
             <TierBadge tier={daily.tier} />
             <RatingBadge rating={daily.problem.rating} />
             {solved && verified && (
-              <span className="inline-flex items-center gap-1 text-xs text-green-400">
+              <span className="inline-flex items-center gap-1 text-xs text-green-500 dark:text-green-400">
                 <ShieldCheck className="w-4 h-4" />
                 Verified
               </span>
             )}
             {solved && !verified && (
-              <span className="inline-flex items-center gap-1 text-xs text-yellow-400">
+              <span className="inline-flex items-center gap-1 text-xs text-yellow-500 dark:text-yellow-400">
                 <CheckCircle2 className="w-4 h-4" />
                 Solved
               </span>
@@ -215,7 +224,7 @@ export default function ProblemPageClient({
             {daily.problem.tags.map((tag) => (
               <span
                 key={tag}
-                className="text-sm px-3 py-1 rounded-lg bg-gray-800 text-gray-300"
+                className="text-sm px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
               >
                 {tag}
               </span>
@@ -236,7 +245,7 @@ export default function ProblemPageClient({
             {daily.problem.testCases && daily.problem.testCases.length > 0 && (
               <button
                 onClick={handleCopyTestCases}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 font-medium text-sm transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-200 font-medium text-sm transition-colors"
               >
                 {testCasesCopied ? (
                   <Check className="w-4 h-4 text-green-400" />
@@ -281,18 +290,76 @@ export default function ProblemPageClient({
           )}
         </div>
 
-        <div className="p-8 border-b border-gray-800">
+        {daily.statement && (
+          <div className="p-8 border-b border-gray-200 dark:border-gray-800">
+            <div className="flex items-center gap-4 mb-4 text-xs text-gray-400 dark:text-gray-500">
+              {daily.statement.timeLimit && (
+                <span>Time: {daily.statement.timeLimit}</span>
+              )}
+              {daily.statement.memoryLimit && (
+                <span>Memory: {daily.statement.memoryLimit}</span>
+              )}
+            </div>
+
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              {daily.statement.statement.split("\n").map((p, i) => (
+                <p key={i}>{p}</p>
+              ))}
+            </div>
+
+            {daily.statement.inputSpec && (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Input</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{daily.statement.inputSpec}</p>
+              </div>
+            )}
+
+            {daily.statement.outputSpec && (
+              <div className="mt-4">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Output</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{daily.statement.outputSpec}</p>
+              </div>
+            )}
+
+            {daily.statement.examples.length > 0 && (
+              <div className="mt-6 space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Examples</h3>
+                {daily.statement.examples.map((ex, i) => (
+                  <div key={i} className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-xs text-gray-400 dark:text-gray-500 mb-1 font-medium">Input {i + 1}</div>
+                      <pre className="text-sm bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-gray-800 rounded-lg p-3 overflow-x-auto text-gray-700 dark:text-gray-300">{ex.input}</pre>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400 dark:text-gray-500 mb-1 font-medium">Output {i + 1}</div>
+                      <pre className="text-sm bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-gray-800 rounded-lg p-3 overflow-x-auto text-gray-700 dark:text-gray-300">{ex.output}</pre>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {daily.statement.note && (
+              <div className="mt-6 p-4 rounded-lg bg-gray-50 dark:bg-gray-800/30 border border-gray-200 dark:border-gray-800">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Note</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line">{daily.statement.note}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="p-8 border-b border-gray-200 dark:border-gray-800">
           <h2 className="text-lg font-semibold mb-3">Problem Details</h2>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-gray-500">Contest</span>
+              <span className="text-gray-400 dark:text-gray-500">Contest</span>
               <p className="font-mono">
                 {daily.problem.cfContestId}
                 {daily.problem.cfIndex}
               </p>
             </div>
             <div>
-              <span className="text-gray-500">Date Assigned</span>
+              <span className="text-gray-400 dark:text-gray-500">Date Assigned</span>
               <p className="flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
                 {daily.date instanceof Date
@@ -303,14 +370,14 @@ export default function ProblemPageClient({
           </div>
         </div>
 
-        <div className="border-t border-gray-800">
-          <div className="flex border-b border-gray-800">
+        <div className="border-t border-gray-200 dark:border-gray-800">
+          <div className="flex border-b border-gray-200 dark:border-gray-800">
             <button
               onClick={() => { setActiveTab("editorial"); setShowAnswer(false); }}
               className={`flex-1 flex items-center justify-center gap-2 p-4 text-sm font-medium transition-colors ${
                 activeTab === "editorial"
-                  ? "text-cyan-400 border-b-2 border-cyan-400 bg-gray-800/30"
-                  : "text-gray-500 hover:text-gray-300 hover:bg-gray-800/20"
+                  ? "text-cyan-600 dark:text-cyan-400 border-b-2 border-cyan-500 bg-cyan-50 dark:bg-gray-800/30"
+                  : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/20"
               }`}
             >
               <BookOpen className="w-4 h-4" />
@@ -320,8 +387,8 @@ export default function ProblemPageClient({
               onClick={() => { setActiveTab("submit"); setShowAnswer(false); }}
               className={`flex-1 flex items-center justify-center gap-2 p-4 text-sm font-medium transition-colors ${
                 activeTab === "submit"
-                  ? "text-emerald-400 border-b-2 border-emerald-400 bg-gray-800/30"
-                  : "text-gray-500 hover:text-gray-300 hover:bg-gray-800/20"
+                  ? "text-emerald-600 dark:text-emerald-400 border-b-2 border-emerald-500 bg-emerald-50 dark:bg-gray-800/30"
+                  : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/20"
               }`}
             >
               <Code className="w-4 h-4" />
@@ -333,19 +400,19 @@ export default function ProblemPageClient({
             <>
               <button
                 onClick={() => setShowAnswer(!showAnswer)}
-                className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-800/50 transition-colors"
+                className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   {showAnswer ? (
                     <EyeOff className="w-5 h-5 text-gray-400" />
                   ) : (
-                    <Eye className="w-5 h-5 text-cyan-400" />
+                    <Eye className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />
                   )}
                   <span className="font-semibold text-lg">
                     {showAnswer ? "Hide Editorial" : "Show Editorial"}
                   </span>
                 </div>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-gray-400 dark:text-gray-500">
                   {showAnswer ? "Click to hide" : "Click to reveal"}
                 </span>
               </button>
@@ -363,7 +430,7 @@ export default function ProblemPageClient({
                       {daily.editorial}
                     </Markdown>
                   </div>
-                  <div className="mt-6 pt-4 border-t border-gray-800">
+                  <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-800">
                     <a
                       href={daily.problem.url}
                       target="_blank"
@@ -381,7 +448,7 @@ export default function ProblemPageClient({
 
           {activeTab === "submit" && (
             <div className="p-6">
-              <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm">
+              <div className="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-amber-700 dark:text-amber-400 text-sm">
                 This judge only runs the visible sample test cases from Codeforces.
                 Once your solution passes here, submit it on{" "}
                 <a

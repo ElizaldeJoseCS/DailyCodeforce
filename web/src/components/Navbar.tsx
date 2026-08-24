@@ -106,23 +106,23 @@ export function Navbar() {
 
   const navLinks = (
     <>
-      <Link href="/" className="hover:text-white transition-colors" onClick={() => setMobileOpen(false)}>
+      <Link href="/" className="hover:text-gray-900 dark:hover:text-white transition-colors" onClick={() => setMobileOpen(false)}>
         Today
       </Link>
-      <Link href="/problems" className="hover:text-white transition-colors" onClick={() => setMobileOpen(false)}>
+      <Link href="/problems" className="hover:text-gray-900 dark:hover:text-white transition-colors" onClick={() => setMobileOpen(false)}>
         Problems
       </Link>
-      <Link href="/archive" className="hover:text-white transition-colors" onClick={() => setMobileOpen(false)}>
+      <Link href="/archive" className="hover:text-gray-900 dark:hover:text-white transition-colors" onClick={() => setMobileOpen(false)}>
         Archive
       </Link>
-      <Link href="/leaderboard" className="hover:text-white transition-colors" onClick={() => setMobileOpen(false)}>
+      <Link href="/leaderboard" className="hover:text-gray-900 dark:hover:text-white transition-colors" onClick={() => setMobileOpen(false)}>
         Leaderboard
       </Link>
     </>
   );
 
   return (
-    <nav className="border-b border-gray-800 dark:border-gray-800 border-gray-200 bg-gray-950/80 dark:bg-gray-950/80 light:bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+    <nav className="border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-2 font-bold text-lg flex-shrink-0">
           <Code2 className="w-5 h-5 text-cyan-400" />
