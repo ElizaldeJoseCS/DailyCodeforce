@@ -169,11 +169,13 @@ function ActivityHeatmap({ progress }: { progress: UserProfile["progress"] }) {
         {/* Month labels */}
         <div className="flex">
           <div className="w-[38px] flex-shrink-0" />
-          {monthLabels.map((label, i) => (
-            <div key={i} className="text-[10px] text-gray-500 w-[16px] text-left flex-shrink-0">
-              {label}
-            </div>
-          ))}
+          <div className="flex gap-[2px]">
+            {monthLabels.map((label, i) => (
+              <div key={i} className="text-[10px] text-gray-500 w-[14px] text-left flex-shrink-0">
+                {label}
+              </div>
+            ))}
+          </div>
         </div>
         {/* Grid */}
         <div className="flex mt-0.5">
