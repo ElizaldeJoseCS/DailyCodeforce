@@ -59,6 +59,29 @@ async function fetchAllProblems(): Promise<CFProblem[]> {
   );
 }
 
+async function scrapeTestCases(contestId: number, index: string): Promise<{ input: string; output: string }[]> {
+  const { load } = await import("cheerio");
+  const url = `https://codeforces.com/problemset/problem/${contestId}/${index}`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": "DailyCodeforceBot/1.0" },
+  });
+  if (!res.ok) return [];
+  const html = await res.text();
+  const $ = load(html);
+  const examples: { input: string; output: string }[] = [];
+  $("div.sample-test").each((_, el) => {
+    const inputs = $(el).find("div.input pre");
+    const outputs = $(el).find("div.output pre");
+    const count = Math.max(inputs.length, outputs.length);
+    for (let i = 0; i < count; i++) {
+      const input = $(inputs[i]).text().trim();
+      const output = $(outputs[i]).text().trim();
+      if (input || output) examples.push({ input, output });
+    }
+  });
+  return examples;
+}
+
 function problemUrl(p: { contestId: number; index: string }): string {
   return `https://codeforces.com/problemset/problem/${p.contestId}/${p.index}`;
 }
@@ -132,6 +155,26 @@ async function seedProblems() {
       },
       update: {},
     });
+
+    // Scrape test cases if missing
+    const existingProblem = await prisma.problem.findUnique({
+      where: { id: problem.id },
+      select: { testCases: true },
+    });
+    if (!existingProblem?.testCases) {
+      console.log(`  Scraping test cases for ${picked.name}...`);
+      const testCases = await scrapeTestCases(picked.contestId, picked.index);
+      if (testCases.length > 0) {
+        await prisma.problem.update({
+          where: { id: problem.id },
+          data: { testCases: testCases as unknown as Record<string, unknown>[] },
+        });
+        console.log(`  → ${testCases.length} test cases saved`);
+      } else {
+        console.log(`  → No test cases found`);
+      }
+      await new Promise((r) => setTimeout(r, 1500));
+    }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
