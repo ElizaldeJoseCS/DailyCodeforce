@@ -207,6 +207,98 @@ export interface ProblemStatement {
   memoryLimit: string;
 }
 
+function stripMathDelimiters(text: string): string {
+  return text
+    .replace(/\$\$\$/g, "")
+    .replace(/\$\$/g, "")
+    .replace(/\$/g, "")
+    .trim();
+}
+
+function cleanLatex(text: string): string {
+  let t = text;
+  t = t.replace(/\\le\b/g, "≤");
+  t = t.replace(/\\ge\b/g, "≥");
+  t = t.replace(/\\neq\b/g, "≠");
+  t = t.replace(/\\times/g, "×");
+  t = t.replace(/\\cdot/g, "·");
+  t = t.replace(/\\div/g, "÷");
+  t = t.replace(/\\pm/g, "±");
+  t = t.replace(/\\infty/g, "∞");
+  t = t.replace(/\\leq/g, "≤");
+  t = t.replace(/\\geq/g, "≥");
+  t = t.replace(/\\oplus/g, "⊕");
+  t = t.replace(/\\ldots/g, "…");
+  t = t.replace(/\\ldots/g, "…");
+  t = t.replace(/\\dots/g, "…");
+  t = t.replace(/\\sum/g, "Σ");
+  t = t.replace(/\\prod/g, "Π");
+  t = t.replace(/\\sqrt/g, "√");
+  t = t.replace(/\^\{(\d+)\}/g, "$1");
+  t = t.replace(/_\{(\d+)\}/g, "$1");
+  t = t.replace(/\^{(\w+)}/g, "$1");
+  t = t.replace(/_{(\w+)}/g, "$1");
+  t = t.replace(/\^{\\circ}/g, "°");
+  t = t.replace(/\\frac\{(\d+)\}\{(\d+)\}/g, "$1/$2");
+  t = t.replace(/\\[a-zA-Z]+/g, "");
+  t = t.replace(/\{|\}/g, "");
+  return t;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractParagraphs($: any, el: any): string[] {
+  const paragraphs: string[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  el.children("p").each((_: number, p: any) => {
+    const text = extractNodeText($, $(p)).trim();
+    if (text) paragraphs.push(text);
+  });
+  if (paragraphs.length === 0) {
+    const text = extractNodeText($, el).trim();
+    if (text) paragraphs.push(text);
+  }
+  return paragraphs;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractNodeText($: any, el: any): string {
+  const lines: string[] = [];
+  let current = "";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  el.contents().each((_: number, child: any) => {
+    const node = $(child);
+    if (child.type === "text") {
+      current += child.data || "";
+    } else if (child.type === "tag") {
+      const tag = child.tagName;
+      if (tag === "br") {
+        lines.push(current);
+        current = "";
+      } else if (tag === "ul" || tag === "ol") {
+        if (current.trim()) lines.push(current);
+        current = "";
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        node.children("li").each((_: number, li: any) => {
+          lines.push("• " + extractNodeText($, $(li)).trim());
+        });
+      } else {
+        if (current.trim()) lines.push(current);
+        current = "";
+        lines.push(extractNodeText($, node).trim());
+      }
+    }
+  });
+  if (current.trim()) lines.push(current);
+  return lines.filter(l => l).join("\n");
+}
+
+function processText(raw: string): string {
+  let t = stripMathDelimiters(raw);
+  t = cleanLatex(t);
+  t = t.replace(/\s+/g, " ").trim();
+  return t;
+}
+
 export async function scrapeProblemStatement(
   contestId: number,
   index: string
@@ -223,12 +315,24 @@ export async function scrapeProblemStatement(
   const problemDiv = $("div.problem-statement");
   if (!problemDiv.length) return null;
 
-  const timeLimit = problemDiv.find("div.time-limit").text().replace("time limit per test", "").trim();
-  const memoryLimit = problemDiv.find("div.memory-limit").text().replace("memory limit per test", "").trim();
-  const statement = problemDiv.find("div.header").next("div").children("p").text().trim();
-  const inputSpec = problemDiv.find("div.input-specification").text().replace("Input", "").trim();
-  const outputSpec = problemDiv.find("div.output-specification").text().replace("Output", "").trim();
-  const note = problemDiv.find("div.note").text().replace("Note", "").trim();
+  const rawTime = problemDiv.find("div.time-limit").text().replace("time limit per test", "").trim();
+  const rawMemory = problemDiv.find("div.memory-limit").text().replace("memory limit per test", "").trim();
+  const timeLimit = processText(rawTime);
+  const memoryLimit = processText(rawMemory);
+
+  // Statement: iterate over <p> elements to preserve paragraph breaks
+  const statementDiv = problemDiv.find("div.header").next("div");
+  const statementParagraphs = extractParagraphs($, statementDiv);
+  const statement = statementParagraphs.map(p => processText(p)).join("\n\n");
+
+  const rawInput = problemDiv.find("div.input-specification").text().replace("Input", "").trim();
+  const inputSpec = processText(rawInput);
+
+  const rawOutput = problemDiv.find("div.output-specification").text().replace("Output", "").trim();
+  const outputSpec = processText(rawOutput);
+
+  const rawNote = problemDiv.find("div.note").text().replace("Note", "").trim();
+  const note = processText(rawNote);
 
   const examples: TestCase[] = [];
   $("div.sample-test").each((_, el) => {
