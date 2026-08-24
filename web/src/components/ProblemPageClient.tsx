@@ -16,6 +16,7 @@ import {
   Loader2,
   Code,
   BookOpen,
+  Clipboard,
 } from "lucide-react";
 import Markdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
@@ -35,6 +36,7 @@ interface DailyProblem {
     url: string;
     cfContestId: number;
     cfIndex: string;
+    testCases: { input: string; output: string }[] | null;
   };
 }
 
@@ -141,6 +143,18 @@ export default function ProblemPageClient({
   const [verified, setVerified] = useState(initialVerified);
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState("");
+  const [testCasesCopied, setTestCasesCopied] = useState(false);
+
+  const handleCopyTestCases = useCallback(async () => {
+    const testCases = daily.problem.testCases;
+    if (!testCases || testCases.length === 0) return;
+    const text = testCases
+      .map((tc, i) => `Input ${i + 1}:\n${tc.input}\n\nOutput ${i + 1}:\n${tc.output}`)
+      .join("\n\n");
+    await navigator.clipboard.writeText(text);
+    setTestCasesCopied(true);
+    setTimeout(() => setTestCasesCopied(false), 2000);
+  }, [daily.problem.testCases]);
 
   const handleVerify = async () => {
     if (!session || solved || verifying) return;
@@ -218,6 +232,20 @@ export default function ProblemPageClient({
               <ExternalLink className="w-4 h-4" />
               Solve on Codeforces
             </a>
+
+            {daily.problem.testCases && daily.problem.testCases.length > 0 && (
+              <button
+                onClick={handleCopyTestCases}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 font-medium text-sm transition-colors"
+              >
+                {testCasesCopied ? (
+                  <Check className="w-4 h-4 text-green-400" />
+                ) : (
+                  <Clipboard className="w-4 h-4" />
+                )}
+                {testCasesCopied ? "Copied!" : "Copy Test Cases"}
+              </button>
+            )}
 
             {session && !solved && (
               <button

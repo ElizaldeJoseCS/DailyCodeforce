@@ -26,9 +26,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} bg-gray-950 text-gray-100 antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} bg-gray-950 text-gray-100 dark:bg-gray-950 dark:text-gray-100 light:bg-white light:text-gray-900 antialiased`}
       >
         <Providers>
           <Navbar />

@@ -4,7 +4,18 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Code2, Search, LogIn, LogOut, User, X } from "lucide-react";
+import { useTheme } from "next-themes";
+import {
+  Code2,
+  Search,
+  LogIn,
+  LogOut,
+  User,
+  X,
+  Sun,
+  Moon,
+  Menu,
+} from "lucide-react";
 
 interface SearchResult {
   users: {
@@ -35,11 +46,14 @@ export function Navbar() {
   const { data: session } = useSession();
   const user = session?.user as SessionUser | undefined;
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult | null>(null);
   const [open, setOpen] = useState(false);
   const [searching, setSearching] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const mobileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user?.needsCfLink) {
@@ -66,6 +80,7 @@ export function Navbar() {
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (mobileRef.current && !mobileRef.current.contains(e.target as Node)) setMobileOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -89,38 +104,48 @@ export function Navbar() {
       .catch(() => {});
   }, [username]);
 
+  const navLinks = (
+    <>
+      <Link href="/" className="hover:text-white transition-colors" onClick={() => setMobileOpen(false)}>
+        Today
+      </Link>
+      <Link href="/problems" className="hover:text-white transition-colors" onClick={() => setMobileOpen(false)}>
+        Problems
+      </Link>
+      <Link href="/archive" className="hover:text-white transition-colors" onClick={() => setMobileOpen(false)}>
+        Archive
+      </Link>
+      <Link href="/leaderboard" className="hover:text-white transition-colors" onClick={() => setMobileOpen(false)}>
+        Leaderboard
+      </Link>
+    </>
+  );
+
   return (
-    <nav className="border-b border-gray-800 bg-gray-950/80 backdrop-blur-sm sticky top-0 z-50">
+    <nav className="border-b border-gray-800 dark:border-gray-800 border-gray-200 bg-gray-950/80 dark:bg-gray-950/80 light:bg-white/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-2 font-bold text-lg flex-shrink-0">
           <Code2 className="w-5 h-5 text-cyan-400" />
           <span className="hidden sm:inline">DailyCodeforce</span>
         </Link>
 
-        <div className="flex items-center gap-4 text-sm text-gray-400">
-          <Link href="/" className="hover:text-white transition-colors hidden sm:block">
-            Today
-          </Link>
-          <Link href="/archive" className="hover:text-white transition-colors hidden sm:block">
-            Archive
-          </Link>
-          <Link href="/leaderboard" className="hover:text-white transition-colors hidden sm:block">
-            Leaderboard
-          </Link>
+        {/* Desktop nav links */}
+        <div className="hidden sm:flex items-center gap-4 text-sm text-gray-400">
+          {navLinks}
         </div>
 
         {/* Search */}
         <div ref={ref} className="relative">
           <button
             onClick={() => setOpen(!open)}
-            className="p-2 rounded-lg hover:bg-gray-800 transition-colors text-gray-400 hover:text-white"
+            className="p-2 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-800 hover:bg-gray-100 transition-colors text-gray-400 hover:text-white"
           >
             <Search className="w-4 h-4" />
           </button>
 
           {open && (
-            <div className="absolute right-0 top-12 w-80 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden">
-              <div className="p-3 border-b border-gray-800">
+            <div className="absolute right-0 top-12 w-80 bg-gray-900 dark:bg-gray-900 bg-white border border-gray-700 dark:border-gray-700 border-gray-200 rounded-xl shadow-2xl overflow-hidden">
+              <div className="p-3 border-b border-gray-800 dark:border-gray-800 border-gray-200">
                 <div className="flex items-center gap-2">
                   <Search className="w-4 h-4 text-gray-500" />
                   <input
@@ -128,7 +153,7 @@ export function Navbar() {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search users or problems..."
-                    className="flex-1 bg-transparent text-sm text-gray-100 placeholder-gray-500 focus:outline-none"
+                    className="flex-1 bg-transparent text-sm text-gray-100 dark:text-gray-100 text-gray-900 placeholder-gray-500 focus:outline-none"
                   />
                   {query && (
                     <button onClick={() => setQuery("")} className="text-gray-500 hover:text-gray-300">
@@ -155,7 +180,7 @@ export function Navbar() {
                         key={u.username}
                         href={`/profile/${u.username}`}
                         onClick={() => { setOpen(false); setQuery(""); }}
-                        className="flex items-center gap-3 px-3 py-2 hover:bg-gray-800 transition-colors"
+                        className="flex items-center gap-3 px-3 py-2 hover:bg-gray-800 dark:hover:bg-gray-800 hover:bg-gray-100 transition-colors"
                       >
                         <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold overflow-hidden flex-shrink-0">
                           {u.avatarUrl || u.discordAvatar ? (
@@ -181,7 +206,7 @@ export function Navbar() {
                         key={p.id}
                         href={p.dailyProblems[0] ? `/problem/${p.dailyProblems[0].id}` : "#"}
                         onClick={() => { setOpen(false); setQuery(""); }}
-                        className="flex items-center justify-between px-3 py-2 hover:bg-gray-800 transition-colors"
+                        className="flex items-center justify-between px-3 py-2 hover:bg-gray-800 dark:hover:bg-gray-800 hover:bg-gray-100 transition-colors"
                       >
                         <div className="min-w-0">
                           <p className="text-sm text-gray-200 truncate">{p.name}</p>
@@ -206,12 +231,21 @@ export function Navbar() {
           )}
         </div>
 
+        {/* Theme toggle */}
+        <button
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="p-2 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-800 hover:bg-gray-100 transition-colors text-gray-400 hover:text-white"
+          title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+        >
+          {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </button>
+
         {/* Auth */}
         {session ? (
-          <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-3">
             <Link
               href={`/profile/${username}`}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-800 transition-colors text-sm text-gray-300"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-800 hover:bg-gray-100 transition-colors text-sm text-gray-300"
             >
                 {avatarUrl ? (
                   <img
@@ -222,11 +256,11 @@ export function Navbar() {
                 ) : (
                 <User className="w-4 h-4" />
               )}
-              <span className="hidden sm:inline">{username}</span>
+              <span>{username}</span>
             </Link>
             <button
               onClick={() => signOut()}
-              className="p-2 rounded-lg hover:bg-gray-800 transition-colors text-gray-400 hover:text-white"
+              className="p-2 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-800 hover:bg-gray-100 transition-colors text-gray-400 hover:text-white"
               title="Sign out"
             >
               <LogOut className="w-4 h-4" />
@@ -235,12 +269,64 @@ export function Navbar() {
         ) : (
           <Link
             href="/auth/signin"
-            className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium transition-colors"
+            className="hidden sm:flex items-center gap-2 px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium transition-colors"
           >
             <LogIn className="w-4 h-4" />
-            <span className="hidden sm:inline">Sign in</span>
+            <span>Sign in</span>
           </Link>
         )}
+
+        {/* Mobile hamburger */}
+        <div ref={mobileRef} className="sm:hidden relative">
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="p-2 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-800 hover:bg-gray-100 transition-colors text-gray-400 hover:text-white"
+          >
+            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+
+          {mobileOpen && (
+            <div className="absolute right-0 top-12 w-56 bg-gray-900 dark:bg-gray-900 bg-white border border-gray-700 dark:border-gray-700 border-gray-200 rounded-xl shadow-2xl overflow-hidden py-2">
+              <div className="flex flex-col gap-1 px-2">
+                {navLinks}
+              </div>
+              <div className="border-t border-gray-800 dark:border-gray-800 border-gray-200 mt-2 pt-2 px-2">
+                {session ? (
+                  <>
+                    <Link
+                      href={`/profile/${username}`}
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-800 hover:bg-gray-100 text-sm text-gray-300"
+                    >
+                      {avatarUrl ? (
+                        <img src={avatarUrl} alt="" className="w-5 h-5 rounded-full" />
+                      ) : (
+                        <User className="w-4 h-4" />
+                      )}
+                      {username}
+                    </Link>
+                    <button
+                      onClick={() => { signOut(); setMobileOpen(false); }}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-800 hover:bg-gray-100 text-sm text-gray-400 w-full"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign out
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    href="/auth/signin"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    Sign in
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </nav>
   );
