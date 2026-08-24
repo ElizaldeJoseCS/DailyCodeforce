@@ -165,37 +165,40 @@ function ActivityHeatmap({ progress }: { progress: UserProfile["progress"] }) {
 
   return (
     <div className="overflow-x-auto">
-      <div className="inline-flex flex-col gap-0.5 min-w-fit">
+      <div className="inline-flex flex-col min-w-fit">
         {/* Month labels */}
-        <div className="flex gap-0.5 ml-8">
+        <div className="flex">
+          <div className="w-[38px] flex-shrink-0" />
           {monthLabels.map((label, i) => (
-            <div key={i} className="text-[10px] text-gray-500 w-[14px] text-center">
+            <div key={i} className="text-[10px] text-gray-500 w-[16px] text-left flex-shrink-0">
               {label}
             </div>
           ))}
         </div>
         {/* Grid */}
-        <div className="flex gap-0.5">
+        <div className="flex mt-0.5">
           {/* Day labels */}
-          <div className="flex flex-col gap-0.5 mr-1">
+          <div className="flex flex-col flex-shrink-0 w-[38px]">
             {["", "Mon", "", "Wed", "", "Fri", ""].map((label, i) => (
-              <div key={i} className="text-[10px] text-gray-500 h-[14px] leading-[14px] text-right">
+              <div key={i} className="text-[10px] text-gray-500 h-[14px] leading-[14px] text-right pr-1">
                 {label}
               </div>
             ))}
           </div>
           {/* Weeks */}
-          {weeks.map((week, wi) => (
-            <div key={wi} className="flex flex-col gap-0.5">
-              {week.map((day) => (
-                <div
-                  key={day.date}
-                  className={`w-[14px] h-[14px] rounded-[3px] ${getColor(day.count)} transition-colors`}
-                  title={`${day.date}: ${day.count} solved`}
-                />
-              ))}
-            </div>
-          ))}
+          <div className="flex gap-[2px]">
+            {weeks.map((week, wi) => (
+              <div key={wi} className="flex flex-col gap-[2px]">
+                {week.map((day) => (
+                  <div
+                    key={day.date}
+                    className={`w-[14px] h-[14px] rounded-[3px] ${getColor(day.count)} transition-colors`}
+                    title={`${day.date}: ${day.count} solved`}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
