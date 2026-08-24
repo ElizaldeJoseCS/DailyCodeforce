@@ -234,10 +234,10 @@ function cleanLatex(text: string): string {
   t = t.replace(/\\sum/g, "Σ");
   t = t.replace(/\\prod/g, "Π");
   t = t.replace(/\\sqrt/g, "√");
-  t = t.replace(/\^\{(\d+)\}/g, "$1");
-  t = t.replace(/_\{(\d+)\}/g, "$1");
-  t = t.replace(/\^{(\w+)}/g, "$1");
-  t = t.replace(/_{(\w+)}/g, "$1");
+  t = t.replace(/\^\{(\d+)\}/g, "^$1");
+  t = t.replace(/_\{(\d+)\}/g, "_$1");
+  t = t.replace(/\^{(\w+)}/g, "^$1");
+  t = t.replace(/_{(\w+)}/g, "_$1");
   t = t.replace(/\^{\\circ}/g, "°");
   t = t.replace(/\\frac\{(\d+)\}\{(\d+)\}/g, "$1/$2");
   t = t.replace(/\\[a-zA-Z]+/g, "");
