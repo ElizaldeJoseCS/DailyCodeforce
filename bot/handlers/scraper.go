@@ -82,7 +82,7 @@ func ScrapeProblem(contestID int, index string) (*ProblemStatement, error) {
 	ps.TimeLimit = cleanPropertyValue(problemDiv.Find("div.header").Find("div.time-limit").Text())
 	ps.MemLimit = cleanPropertyValue(problemDiv.Find("div.header").Find("div.memory-limit").Text())
 
-	// Statement: collect all sibling paragraphs between header and input-specification
+	// Statement: walk DOM properly to preserve paragraphs, lists, display math
 	header := problemDiv.Find("div.header")
 	header.Each(func(_ int, h *goquery.Selection) {
 		for _, sib := range h.NextAll().Nodes {
@@ -91,7 +91,10 @@ func ScrapeProblem(contestID int, index string) (*ProblemStatement, error) {
 			if strings.Contains(cls, "input-specification") || strings.Contains(cls, "output-specification") || strings.Contains(cls, "sample-tests") || strings.Contains(cls, "note") {
 				break
 			}
-			text := stripMath(strings.TrimSpace(sel.Text()))
+			text := renderNodeText(sib)
+			text = stripMath(text)
+			text = convertLatex(text)
+			text = strings.TrimSpace(text)
 			if text != "" {
 				if ps.Statement != "" {
 					ps.Statement += "\n\n"
@@ -106,6 +109,7 @@ func ScrapeProblem(contestID int, index string) (*ProblemStatement, error) {
 	var inputParts []string
 	inputSpecDiv.Find("p").Each(func(_ int, p *goquery.Selection) {
 		text := stripMath(strings.TrimSpace(p.Text()))
+		text = convertLatex(text)
 		if text != "" {
 			inputParts = append(inputParts, text)
 		}
@@ -116,6 +120,7 @@ func ScrapeProblem(contestID int, index string) (*ProblemStatement, error) {
 	var outputParts []string
 	outputSpecDiv.Find("p").Each(func(_ int, p *goquery.Selection) {
 		text := stripMath(strings.TrimSpace(p.Text()))
+		text = convertLatex(text)
 		if text != "" {
 			outputParts = append(outputParts, text)
 		}
@@ -158,8 +163,8 @@ func ScrapeProblem(contestID int, index string) (*ProblemStatement, error) {
 				if cls == "section-title" {
 					continue
 				}
-				sel := goquery.NewDocumentFromNode(child)
-				text := stripMath(strings.TrimSpace(sel.Text()))
+				text := stripMath(renderNodeText(child))
+				text = convertLatex(strings.TrimSpace(text))
 				if text != "" {
 					noteParts = append(noteParts, text)
 				}
@@ -203,6 +208,126 @@ func cleanPropertyValue(s string) string {
 func stripMath(s string) string {
 	s = strings.ReplaceAll(s, "$$$", "")
 	s = strings.ReplaceAll(s, "$$", "")
+	return s
+}
+
+func renderNodeText(node *html.Node) string {
+	if node == nil {
+		return ""
+	}
+	switch node.Type {
+	case html.TextNode:
+		return node.Data
+	case html.ElementNode:
+		tag := node.Data
+		switch tag {
+		case "p", "div":
+			var parts []string
+			for child := node.FirstChild; child != nil; child = child.NextSibling {
+				if t := renderNodeText(child); t != "" {
+					parts = append(parts, t)
+				}
+			}
+			return strings.TrimSpace(strings.Join(parts, ""))
+		case "ul", "ol":
+			var items []string
+			for child := node.FirstChild; child != nil; child = child.NextSibling {
+				if child.Type == html.ElementNode && child.Data == "li" {
+					text := strings.TrimSpace(renderNodeText(child))
+					if text != "" {
+						items = append(items, "• "+text)
+					}
+				}
+			}
+			return strings.Join(items, "\n")
+		case "li":
+			var parts []string
+			for child := node.FirstChild; child != nil; child = child.NextSibling {
+				if t := renderNodeText(child); t != "" {
+					parts = append(parts, t)
+				}
+			}
+			return strings.TrimSpace(strings.Join(parts, ""))
+		case "br":
+			return "\n"
+		case "span", "a", "b", "i", "u", "em", "strong", "sub", "sup":
+			var parts []string
+			for child := node.FirstChild; child != nil; child = child.NextSibling {
+				if t := renderNodeText(child); t != "" {
+					parts = append(parts, t)
+				}
+			}
+			return strings.TrimSpace(strings.Join(parts, ""))
+		default:
+			var parts []string
+			for child := node.FirstChild; child != nil; child = child.NextSibling {
+				if t := renderNodeText(child); t != "" {
+					parts = append(parts, t)
+				}
+			}
+			return strings.TrimSpace(strings.Join(parts, ""))
+		}
+	}
+	return ""
+}
+
+func convertLatex(s string) string {
+	replacements := []struct{ from, to string }{
+		{"\\leq", "≤"}, {"\\le", "≤"},
+		{"\\geq", "≥"}, {"\\ge", "≥"},
+		{"\\neq", "≠"},
+		{"\\lt", "<"}, {"\\gt", ">"},
+		{"\\times", "×"}, {"\\cdot", "·"},
+		{"\\div", "÷"},
+		{"\\pm", "±"}, {"\\mp", "∓"},
+		{"\\oplus", "⊕"}, {"\\otimes", "⊗"},
+		{"\\ldots", "…"}, {"\\cdots", "⋯"}, {"\\dots", "…"},
+		{"\\rightarrow", "→"}, {"\\leftarrow", "←"},
+		{"\\Rightarrow", "⇒"}, {"\\Leftarrow", "⇐"},
+		{"\\leftrightarrow", "↔"},
+		{"\\sum", "∑"}, {"\\prod", "∏"}, {"\\int", "∫"},
+		{"\\infty", "∞"}, {"\\partial", "∂"},
+		{"\\forall", "∀"}, {"\\exists", "∃"},
+		{"\\in", "∈"}, {"\\notin", "∉"},
+		{"\\subset", "⊂"}, {"\\supset", "⊃"},
+		{"\\cup", "∪"}, {"\\cap", "∩"},
+		{"\\emptyset", "∅"},
+		{"\\alpha", "α"}, {"\\beta", "β"}, {"\\gamma", "γ"}, {"\\delta", "δ"},
+		{"\\epsilon", "ε"}, {"\\zeta", "ζ"}, {"\\eta", "η"}, {"\\theta", "θ"},
+		{"\\iota", "ι"}, {"\\kappa", "κ"}, {"\\lambda", "λ"}, {"\\mu", "μ"},
+		{"\\nu", "ν"}, {"\\xi", "ξ"}, {"\\pi", "π"}, {"\\rho", "ρ"},
+		{"\\sigma", "σ"}, {"\\tau", "τ"}, {"\\upsilon", "υ"},
+		{"\\phi", "φ"}, {"\\chi", "χ"}, {"\\psi", "ψ"}, {"\\omega", "ω"},
+		{"\\Alpha", "Α"}, {"\\Beta", "Β"}, {"\\Gamma", "Γ"}, {"\\Delta", "Δ"},
+		{"\\Theta", "Θ"}, {"\\Lambda", "Λ"}, {"\\Xi", "Ξ"}, {"\\Pi", "Π"},
+		{"\\Sigma", "Σ"}, {"\\Phi", "Φ"}, {"\\Psi", "Ψ"}, {"\\Omega", "Ω"},
+	}
+	for _, r := range replacements {
+		s = strings.ReplaceAll(s, r.from, r.to)
+	}
+	// Clean up subscript/superscript braces: a_{m+1} -> a_{m+1}  (keep readable)
+	// Remove outer braces: {word} -> word (but only if simple token)
+	for {
+		changed := false
+		newS := s
+		for i := 0; i < len(newS); i++ {
+			if newS[i] == '{' {
+				end := strings.IndexByte(newS[i+1:], '}')
+				if end >= 0 {
+					inner := newS[i+1 : i+1+end]
+					if !strings.ContainsAny(inner, " ,{}") && len(inner) <= 20 {
+						newS = newS[:i] + inner + newS[i+2+end:]
+						changed = true
+						break
+					}
+				}
+			}
+		}
+		s = newS
+		if !changed {
+			break
+		}
+	}
 	return s
 }
 
