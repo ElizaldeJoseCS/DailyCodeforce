@@ -22,6 +22,57 @@ import Markdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import SubmitClient from "./SubmitClient";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ExampleBlock({ ex }: { ex: { input: string; output: string } }) {
+  const inputRef = useRef<HTMLDivElement>(null);
+  const outputRef = useRef<HTMLDivElement>(null);
+  const [copiedInput, setCopiedInput] = useState(false);
+  const [copiedOutput, setCopiedOutput] = useState(false);
+
+  const copyInput = useCallback(async () => {
+    await navigator.clipboard.writeText(ex.input);
+    setCopiedInput(true);
+    setTimeout(() => setCopiedInput(false), 1500);
+  }, [ex.input]);
+
+  const copyOutput = useCallback(async () => {
+    await navigator.clipboard.writeText(ex.output);
+    setCopiedOutput(true);
+    setTimeout(() => setCopiedOutput(false), 1500);
+  }, [ex.output]);
+
+  return (
+    <table className="w-full border-collapse text-sm my-2">
+      <tbody>
+        <tr>
+          <td className="align-top pr-4 pb-1 w-1/2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-bold text-gray-500 dark:text-gray-400">Input</span>
+              <button onClick={copyInput} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors" title="Copy input">
+                {copiedInput ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+            <div ref={inputRef} className="bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-gray-700 rounded p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap break-all text-gray-800 dark:text-gray-200">
+              {ex.input}
+            </div>
+          </td>
+          <td className="align-top pb-1 w-1/2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-bold text-gray-500 dark:text-gray-400">Output</span>
+              <button onClick={copyOutput} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors" title="Copy output">
+                {copiedOutput ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+            <div ref={outputRef} className="bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-gray-700 rounded p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap break-all text-gray-800 dark:text-gray-200">
+              {ex.output}
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+
 interface DailyProblem {
   id: string;
   tier: string;
@@ -322,19 +373,10 @@ export default function ProblemPageClient({
             )}
 
             {daily.statement.examples.length > 0 && (
-              <div className="mt-6 space-y-4">
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Examples</h3>
+              <div className="mt-6">
+                <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Examples</h3>
                 {daily.statement.examples.map((ex, i) => (
-                  <div key={i} className="grid grid-cols-2 gap-4">
-                    <div>
-                      <div className="text-xs text-gray-400 dark:text-gray-500 mb-1 font-medium">Input {i + 1}</div>
-                      <pre className="text-sm bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-gray-800 rounded-lg p-3 overflow-x-auto text-gray-700 dark:text-gray-300">{ex.input}</pre>
-                    </div>
-                    <div>
-                      <div className="text-xs text-gray-400 dark:text-gray-500 mb-1 font-medium">Output {i + 1}</div>
-                      <pre className="text-sm bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-gray-800 rounded-lg p-3 overflow-x-auto text-gray-700 dark:text-gray-300">{ex.output}</pre>
-                    </div>
-                  </div>
+                  <ExampleBlock key={i} ex={ex} />
                 ))}
               </div>
             )}

@@ -2,14 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { randomUUID } from "crypto";
-import { writeFileSync, unlinkSync } from "fs";
-import { tmpdir } from "os";
-import { join } from "path";
-import { execFile } from "child_process";
-import { promisify } from "util";
 
-const execFileAsync = promisify(execFile);
+const JUDGE_URL = process.env.JUDGE_URL || "http://judge:8080";
 
 const rateLimitMap = new Map<string, number[]>();
 const RATE_LIMIT_WINDOW = 60_000;
@@ -72,32 +66,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No test cases available for this problem" }, { status: 400 });
     }
 
-    const id = randomUUID();
-    const srcPath = join(tmpdir(), `sub_${id}.cpp`);
-    const tcPath = join(tmpdir(), `tc_${id}.json`);
+    const judgeRes = await fetch(`${JUDGE_URL}/judge`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sourceCode, testCases }),
+      signal: AbortSignal.timeout(30_000),
+    });
 
-    writeFileSync(srcPath, sourceCode);
-    writeFileSync(tcPath, JSON.stringify(testCases));
-
-    try {
-      const judgePath = join(process.cwd(), "judge", "judge.py");
-      const { stdout } = await execFileAsync("python3", [judgePath, srcPath, tcPath], {
-        timeout: 30_000,
-        maxBuffer: 1024 * 1024,
-      });
-
-      const result = JSON.parse(stdout.trim());
-      return NextResponse.json(result);
-    } catch (e: unknown) {
-      const err = e as { stderr?: string; status?: number };
-      if (err.status === 137 || err.stderr?.includes("Killed")) {
-        return NextResponse.json({ error: "Judging timed out or used too much memory" }, { status: 400 });
-      }
-      return NextResponse.json({ error: "Judging failed" }, { status: 500 });
-    } finally {
-      try { unlinkSync(srcPath); } catch {}
-      try { unlinkSync(tcPath); } catch {}
+    if (!judgeRes.ok) {
+      const err = await judgeRes.json().catch(() => ({ error: "Judge service error" }));
+      return NextResponse.json({ error: err.error || "Judge service error" }, { status: 500 });
     }
+
+    const result = await judgeRes.json();
+    return NextResponse.json(result);
   } catch {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
