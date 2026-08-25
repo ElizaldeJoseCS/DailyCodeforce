@@ -44,7 +44,7 @@ case "$1" in
     psql_cmd "SELECT dp.date, dp.tier, p.name, p.rating, up.verified, up.\"solvedAt\" FROM user_progress up JOIN users u ON u.id = up.\"userId\" JOIN daily_problems dp ON dp.id = up.\"dailyProblemId\" JOIN problems p ON p.id = dp.\"problemId\" WHERE u.username = '$2' ORDER BY up.\"solvedAt\" DESC;"
     ;;
   reports)
-    psql_cmd "SELECT er.id, u.username, dp.date, p.name, er.message, er.\"createdAt\" FROM editorial_reports er LEFT JOIN users u ON u.id = er.\"userId\" JOIN daily_problems dp ON dp.id = er.\"dailyProblemId\" JOIN problems p ON p.id = dp.\"problemId\" ORDER BY er.\"createdAt\" DESC;"
+    psql_cmd "SELECT er.id, u.username, dp.date, p.name, er.message, er.\"createdAt\" FROM editorial_reports er LEFT JOIN users u ON u.id = er.\"userId\" LEFT JOIN daily_problems dp ON dp.id = er.\"dailyProblemId\" LEFT JOIN problems p ON p.id = dp.\"problemId\" ORDER BY er.\"createdAt\" DESC;"
     ;;
   counts)
     echo "=== Row Counts ==="

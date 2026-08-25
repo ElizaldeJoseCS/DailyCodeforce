@@ -18,11 +18,13 @@ import {
   BookOpen,
   Clipboard,
   Flag,
+  MessageSquare,
 } from "lucide-react";
 import Markdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import SubmitClient from "./SubmitClient";
 import ReportModal from "./ReportModal";
+import Discussion from "./Discussion";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ExampleBlock({ ex }: { ex: { input: string; output: string } }) {
@@ -200,7 +202,7 @@ export default function ProblemPageClient({
 }) {
   const { data: session } = useSession();
   const [showAnswer, setShowAnswer] = useState(false);
-  const [activeTab, setActiveTab] = useState<"editorial" | "submit">("editorial");
+  const [activeTab, setActiveTab] = useState<"editorial" | "submit" | "discussion">("editorial");
   const [solved, setSolved] = useState(initialSolved);
   const [verified, setVerified] = useState(initialVerified);
   const [verifying, setVerifying] = useState(false);
@@ -439,6 +441,17 @@ export default function ProblemPageClient({
               <Code className="w-4 h-4" />
               Submit
             </button>
+            <button
+              onClick={() => { setActiveTab("discussion"); setShowAnswer(false); }}
+              className={`flex-1 flex items-center justify-center gap-2 p-4 text-sm font-medium transition-colors ${
+                activeTab === "discussion"
+                  ? "text-purple-600 dark:text-purple-400 border-b-2 border-purple-500 bg-purple-50 dark:bg-gray-800/30"
+                  : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/20"
+              }`}
+            >
+              <MessageSquare className="w-4 h-4" />
+              Discussion
+            </button>
           </div>
 
           {activeTab === "editorial" && (
@@ -521,6 +534,10 @@ export default function ProblemPageClient({
               </div>
               <SubmitClient problemId={daily.problem.id} />
             </div>
+          )}
+
+          {activeTab === "discussion" && (
+            <Discussion dailyProblemId={daily.id} />
           )}
         </div>
       </div>

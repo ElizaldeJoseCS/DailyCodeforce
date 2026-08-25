@@ -45,12 +45,12 @@ export async function GET() {
       createdAt: r.createdAt.toISOString(),
       userId: r.userId,
       user: r.userId ? userMap.get(r.userId) || null : null,
-      dailyProblem: {
+      dailyProblem: r.dailyProblem ? {
         id: r.dailyProblem.id,
         tier: r.dailyProblem.tier,
         date: r.dailyProblem.date.toISOString().split("T")[0],
         problem: r.dailyProblem.problem,
-      },
+      } : null,
     })),
   });
 }

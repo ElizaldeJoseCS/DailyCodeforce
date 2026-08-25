@@ -36,6 +36,8 @@ model User {
   updatedAt       DateTime       @updatedAt
   progress        UserProgress[]
   sessions        Session[]
+  comments        Comment[]
+  votes           CommentVote[]
 
   @@map("users")
 }
@@ -77,6 +79,7 @@ model DailyProblem {
   createdAt     DateTime       @default(now())
   progress      UserProgress[]
   reports       EditorialReport[]
+  comments      Comment[]
 
   @@index([tier, date])
   @@map("daily_problems")
@@ -96,12 +99,42 @@ model UserProgress {
 }
 
 model EditorialReport {
+  id             String        @id @default(cuid())
+  dailyProblemId String?
+  dailyProblem   DailyProblem? @relation(fields: [dailyProblemId], references: [id])
+  userId         String?
+  message        String?
+  createdAt      DateTime      @default(now())
+
+  @@map("editorial_reports")
+}
+
+model Comment {
   id             String       @id @default(cuid())
   dailyProblemId String
   dailyProblem   DailyProblem @relation(fields: [dailyProblemId], references: [id])
-  userId         String?
-  message        String?
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  parentId       String?
+  parent         Comment?     @relation("CommentReplies", fields: [parentId], references: [id])
+  replies        Comment[]    @relation("CommentReplies")
+  content        String
+  upvotes        Int          @default(0)
   createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  votes          CommentVote[]
 
-  @@map("editorial_reports")
+  @@index([dailyProblemId, createdAt])
+  @@map("comments")
+}
+
+model CommentVote {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  commentId String
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+  @@map("comment_votes")
 }

@@ -8,26 +8,15 @@ export async function POST(req: NextRequest) {
   const userId = (session?.user as Record<string, string> | undefined)?.id;
 
   const { dailyProblemId, message } = await req.json();
-  if (!dailyProblemId) {
-    return NextResponse.json({ error: "dailyProblemId required" }, { status: 400 });
-  }
-
-  const existing = await prisma.editorialReport.findFirst({
-    where: {
-      dailyProblemId,
-      userId: userId || null,
-    },
-  });
-
-  if (existing) {
-    return NextResponse.json({ error: "Already reported" }, { status: 409 });
+  if (!message || !message.trim()) {
+    return NextResponse.json({ error: "Message required" }, { status: 400 });
   }
 
   await prisma.editorialReport.create({
     data: {
-      dailyProblemId,
+      dailyProblemId: dailyProblemId || null,
       userId: userId || null,
-      message: message || null,
+      message: message.trim(),
     },
   });
 

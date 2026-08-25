@@ -74,6 +74,18 @@ services:
     networks:
       - internal
 
+  presence:
+    build:
+      context: ./presence
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    networks:
+      - internal
+
   nginx:
     image: nginx:alpine
     restart: unless-stopped

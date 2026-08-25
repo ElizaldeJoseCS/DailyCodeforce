@@ -3,14 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { X, Flag, Send, Loader2, CheckCircle2 } from "lucide-react";
 
-interface DailyProblemOption {
-  id: string;
-  problemName: string;
-  problemId: string;
-  tier: string;
-  date: string;
-}
-
 export default function ReportModal({
   open,
   onClose,
@@ -20,35 +12,22 @@ export default function ReportModal({
   onClose: () => void;
   preselectedProblemId?: string;
 }) {
-  const [problems, setProblems] = useState<DailyProblemOption[]>([]);
-  const [selectedId, setSelectedId] = useState(preselectedProblemId || "");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (open && !preselectedProblemId) {
-      fetch("/api/reports/problems")
-        .then((r) => r.json())
-        .then((data) => setProblems(data.problems || []))
-        .catch(() => {});
-    }
-  }, [open, preselectedProblemId]);
-
-  useEffect(() => {
     if (open) {
-      setSelectedId(preselectedProblemId || "");
+      setMessage("");
       setSubmitted(false);
       setError("");
-      if (preselectedProblemId) setMessage("");
-      else setMessage("");
     }
-  }, [open, preselectedProblemId]);
+  }, [open]);
 
   const handleSubmit = useCallback(async () => {
-    if (!selectedId) {
-      setError("Please select a problem.");
+    if (!message.trim()) {
+      setError("Please describe the issue.");
       return;
     }
     setLoading(true);
@@ -57,7 +36,10 @@ export default function ReportModal({
       const res = await fetch("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dailyProblemId: selectedId, message: message.trim() || null }),
+        body: JSON.stringify({
+          dailyProblemId: preselectedProblemId || null,
+          message: message.trim(),
+        }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -70,18 +52,15 @@ export default function ReportModal({
     } finally {
       setLoading(false);
     }
-  }, [selectedId, message]);
+  }, [message, preselectedProblemId]);
 
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Modal */}
       <div className="relative w-full max-w-lg mx-4 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
           <div className="flex items-center gap-2">
             <Flag className="w-5 h-5 text-red-400" />
@@ -109,41 +88,16 @@ export default function ReportModal({
           </div>
         ) : (
           <div className="p-6 space-y-4">
-            {/* Problem selector */}
-            {!preselectedProblemId && (
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">Which problem?</label>
-                <select
-                  value={selectedId}
-                  onChange={(e) => setSelectedId(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 appearance-none"
-                >
-                  <option value="">Select a problem...</option>
-                  {problems.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.problemName} ({p.tier} — {p.date})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {preselectedProblemId && (
-              <div className="p-3 rounded-lg bg-gray-800/50 border border-gray-700 text-sm text-gray-300">
-                Reporting issue with the current problem.
-              </div>
-            )}
-
-            {/* Message */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                What&apos;s wrong? <span className="text-gray-500">(optional)</span>
+                What&apos;s wrong?
               </label>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                rows={4}
-                placeholder="e.g. Editorial has a typo in step 3, test case 2 seems wrong..."
+                rows={5}
+                placeholder="Describe the issue — include the problem name if relevant..."
+                autoFocus
                 className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 resize-none"
               />
             </div>
@@ -154,7 +108,6 @@ export default function ReportModal({
               </div>
             )}
 
-            {/* Actions */}
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 onClick={onClose}
@@ -164,7 +117,7 @@ export default function ReportModal({
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={loading || !selectedId}
+                disabled={loading || !message.trim()}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition-colors"
               >
                 {loading ? (
