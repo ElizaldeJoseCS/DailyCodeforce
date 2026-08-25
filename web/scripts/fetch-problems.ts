@@ -87,10 +87,10 @@ function problemUrl(p: { contestId: number; index: string }): string {
 }
 
 const TIERS: Record<string, { min: number; max: number }> = {
-  beginner: { min: 800, max: 1200 },
-  intermediate: { min: 1200, max: 1600 },
+  beginner: { min: 800, max: 1000 },
+  intermediate: { min: 1100, max: 1500 },
   advanced: { min: 1600, max: 2000 },
-  expert: { min: 2000, max: 3500 },
+  expert: { min: 2100, max: 3500 },
 };
 
 const TIER_ORDER = ["beginner", "intermediate", "advanced", "expert"];
