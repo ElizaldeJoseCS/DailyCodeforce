@@ -150,35 +150,41 @@ function ActivityHeatmap({ progress }: { progress: UserProfile["progress"] }) {
     weeks.push(days.slice(i, i + 7));
   }
 
-  const monthLabels: string[] = [];
+  // Build month label positions — only show if at least 2 columns apart
+  const monthPositions: { label: string; weekIndex: number }[] = [];
   let lastMonth = -1;
-  for (const week of weeks) {
-    const d = new Date(week[0].date);
+  let lastLabelWeek = -99;
+  for (let wi = 0; wi < weeks.length; wi++) {
+    const d = new Date(weeks[wi][0].date);
     const m = d.getMonth();
     if (m !== lastMonth) {
-      monthLabels.push(d.toLocaleString("default", { month: "short" }));
+      if (wi - lastLabelWeek >= 2 || lastLabelWeek === -99) {
+        monthPositions.push({ label: d.toLocaleString("default", { month: "short" }), weekIndex: wi });
+        lastLabelWeek = wi;
+      }
       lastMonth = m;
-    } else {
-      monthLabels.push("");
     }
   }
 
+  const colWidth = 16; // 14px cell + 2px gap
+
   return (
     <div className="overflow-x-auto">
-      <div className="inline-flex flex-col min-w-fit">
-        {/* Month labels */}
-        <div className="flex">
-          <div className="w-[38px] flex-shrink-0" />
-          <div className="flex gap-[2px]">
-            {monthLabels.map((label, i) => (
-              <div key={i} className="text-[10px] text-gray-500 w-[14px] text-left flex-shrink-0">
-                {label}
-              </div>
-            ))}
-          </div>
+      <div className="relative inline-block min-w-fit pt-4">
+        {/* Month labels — absolutely positioned */}
+        <div className="absolute top-0 left-[38px] right-0 h-4">
+          {monthPositions.map((mp) => (
+            <div
+              key={mp.weekIndex}
+              className="absolute text-[10px] text-gray-500 leading-none"
+              style={{ left: mp.weekIndex * colWidth }}
+            >
+              {mp.label}
+            </div>
+          ))}
         </div>
         {/* Grid */}
-        <div className="flex mt-0.5">
+        <div className="flex">
           {/* Day labels */}
           <div className="flex flex-col flex-shrink-0 w-[38px]">
             {["", "Mon", "", "Wed", "", "Fri", ""].map((label, i) => (
