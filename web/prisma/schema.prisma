@@ -78,7 +78,6 @@ model DailyProblem {
   progress      UserProgress[]
   reports       EditorialReport[]
 
-  @@unique([tier, date])
   @@index([tier, date])
   @@map("daily_problems")
 }
