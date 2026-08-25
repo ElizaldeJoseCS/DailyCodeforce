@@ -101,8 +101,10 @@ async function postEditorials() {
   const problems = await prisma.dailyProblem.findMany({
     where: { date: today, editorial: { not: null } },
     include: { problem: true },
-    orderBy: { tier: "asc" },
   });
+
+  const tierOrder: Record<string, number> = { beginner: 1, intermediate: 2, advanced: 3, expert: 4 };
+  problems.sort((a, b) => (tierOrder[a.tier] || 99) - (tierOrder[b.tier] || 99));
 
   if (problems.length === 0) {
     console.log("No editorials to post for today");

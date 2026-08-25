@@ -27,7 +27,7 @@ func handleDaily(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql.D
 		args = append(args, tierFilter)
 	}
 
-	query += " ORDER BY dp.tier"
+	query += " ORDER BY CASE dp.tier WHEN 'beginner' THEN 1 WHEN 'intermediate' THEN 2 WHEN 'advanced' THEN 3 WHEN 'expert' THEN 4 END"
 
 	rows, err := db.Query(query, args...)
 	if err != nil {
@@ -102,7 +102,7 @@ func SendDailyNotification(s *discordgo.Session, db *sql.DB, channelID string) e
 		FROM daily_problems dp
 		JOIN problems p ON p.id = dp."problemId"
 		WHERE dp.date = CURRENT_DATE
-		ORDER BY dp.tier
+		ORDER BY CASE dp.tier WHEN 'beginner' THEN 1 WHEN 'intermediate' THEN 2 WHEN 'advanced' THEN 3 WHEN 'expert' THEN 4 END
 	`)
 	if err != nil {
 		return fmt.Errorf("query daily problems: %w", err)
