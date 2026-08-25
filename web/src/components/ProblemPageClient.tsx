@@ -22,6 +22,7 @@ import {
 import Markdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import SubmitClient from "./SubmitClient";
+import ReportModal from "./ReportModal";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ExampleBlock({ ex }: { ex: { input: string; output: string } }) {
@@ -205,7 +206,7 @@ export default function ProblemPageClient({
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState("");
   const [testCasesCopied, setTestCasesCopied] = useState(false);
-  const [reported, setReported] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const handleCopyTestCases = useCallback(async () => {
     const testCases = daily.problem.testCases;
@@ -217,20 +218,6 @@ export default function ProblemPageClient({
     setTestCasesCopied(true);
     setTimeout(() => setTestCasesCopied(false), 2000);
   }, [daily.problem.testCases]);
-
-  const handleReport = useCallback(async () => {
-    if (reported) return;
-    try {
-      await fetch("/api/report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dailyProblemId: daily.id }),
-      });
-      setReported(true);
-    } catch {
-      // ignore
-    }
-  }, [daily.id, reported]);
 
   const handleVerify = async () => {
     if (!session || solved || verifying) return;
@@ -499,18 +486,18 @@ export default function ProblemPageClient({
                       View on Codeforces
                     </a>
                     <button
-                      onClick={handleReport}
-                      disabled={reported}
-                      className={`inline-flex items-center gap-1.5 text-xs transition-colors ${
-                        reported
-                          ? "text-gray-400 dark:text-gray-500 cursor-default"
-                          : "text-gray-400 dark:text-gray-500 hover:text-red-400 dark:hover:text-red-400"
-                      }`}
+                      onClick={() => setReportOpen(true)}
+                      className="inline-flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-red-400 dark:hover:text-red-400 transition-colors"
                       title="Report incorrect editorial"
                     >
                       <Flag className="w-3.5 h-3.5" />
-                      {reported ? "Reported" : "Report issue"}
+                      Report issue
                     </button>
+                    <ReportModal
+                      open={reportOpen}
+                      onClose={() => setReportOpen(false)}
+                      preselectedProblemId={daily.id}
+                    />
                   </div>
                 </div>
               )}
