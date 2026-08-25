@@ -12,6 +12,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { ratingColor } from "@/lib/utils";
+import { TIERS, TIER_ORDER } from "@/lib/tiers";
 
 interface DailyProblem {
   id: string;
@@ -38,10 +39,11 @@ interface ProblemsResponse {
 
 const RATING_PRESETS = [
   { label: "All", min: 0, max: 9999 },
-  { label: "Beginner", min: 800, max: 1200 },
-  { label: "Intermediate", min: 1200, max: 1600 },
-  { label: "Advanced", min: 1600, max: 2000 },
-  { label: "Expert", min: 2000, max: 3500 },
+  ...TIER_ORDER.map((key) => ({
+    label: TIERS[key].label,
+    min: TIERS[key].min,
+    max: TIERS[key].max,
+  })),
 ];
 
 const tierColors: Record<string, string> = {
