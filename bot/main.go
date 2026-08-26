@@ -65,6 +65,7 @@ func main() {
 	dg.AddHandler(handlers.OnInteractionCreate(db))
 
 	dg.Identify.Intents = discordgo.IntentsGuilds
+	dg.ShouldReconnectOnError = true
 
 	err = dg.Open()
 	if err != nil {
