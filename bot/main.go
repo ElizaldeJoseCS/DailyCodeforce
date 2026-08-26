@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -79,6 +80,11 @@ func main() {
 
 	go startDailyNotifier(dg, db)
 
+	channelID := os.Getenv("NOTIFICATION_CHANNEL_ID")
+	if channelID != "" {
+		go startHTTPTrigger(dg, db, channelID)
+	}
+
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM)
 	<-sc
@@ -121,4 +127,24 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func startHTTPTrigger(dg *discordgo.Session, db *sql.DB, channelID string) {
+	http.HandleFunc("/trigger-daily", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "POST only", http.StatusMethodNotAllowed)
+			return
+		}
+		log.Println("Manual daily trigger received")
+		if err := handlers.SendDailyNotification(dg, db, channelID); err != nil {
+			log.Printf("Manual daily trigger failed: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Write([]byte("ok"))
+	})
+	log.Println("HTTP trigger listening on :9090")
+	if err := http.ListenAndServe(":9090", nil); err != nil {
+		log.Printf("HTTP trigger failed: %v", err)
+	}
 }
