@@ -124,7 +124,7 @@ export default function ProblemsPage() {
 
       <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold">
+          <h1 className="text-3xl font-bold tracking-tight">
             Problem <span className="text-cyan-400">Browser</span>
           </h1>
           <p className="text-gray-500 text-sm mt-1">
@@ -241,13 +241,14 @@ export default function ProblemsPage() {
                 href={dp ? `/problem/${dp.id}` : p.url}
                 target={dp ? undefined : "_blank"}
                 rel={dp ? undefined : "noopener noreferrer"}
-                className="group rounded-xl border border-gray-800 dark:border-gray-800 border-gray-200 bg-gray-900/50 dark:bg-gray-900/50 bg-white p-5 hover:border-gray-700 dark:hover:border-gray-700 hover:border-gray-300 transition-all"
+                title={dp ? undefined : "Not featured as a daily problem yet — opens on Codeforces in a new tab (no in-app editorial or judge)"}
+                className={`group rounded-xl border border-gray-800 dark:border-gray-800 border-gray-200 bg-gray-900/50 dark:bg-gray-900/50 bg-white p-5 hover:border-gray-700 dark:hover:border-gray-700 hover:border-gray-300 transition-all ${!dp ? "opacity-80 hover:opacity-100" : ""}`}
               >
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-2 gap-2">
                   <div className="flex items-center gap-2">
                     {dp && (
                       <span className={`text-xs px-2 py-0.5 rounded-full border ${tierColors[dp.tier] || "text-gray-400"}`}>
-                        {dp.tier}
+                        {dp.tier.charAt(0).toUpperCase() + dp.tier.slice(1)}
                       </span>
                     )}
                     <span className={`text-sm font-mono font-bold ${ratingColor(p.rating)}`}>
@@ -255,7 +256,10 @@ export default function ProblemsPage() {
                     </span>
                   </div>
                   {!dp && (
-                    <ExternalLink className="w-3.5 h-3.5 text-gray-600 group-hover:text-cyan-400 transition-colors" />
+                    <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-gray-700 text-gray-500 group-hover:text-cyan-400 group-hover:border-cyan-500/30 transition-colors whitespace-nowrap">
+                      <ExternalLink className="w-3 h-3" />
+                      Codeforces only
+                    </span>
                   )}
                 </div>
                 <h3 className="font-medium group-hover:text-cyan-400 dark:group-hover:text-cyan-400 transition-colors mb-2">

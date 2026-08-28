@@ -15,6 +15,7 @@ import {
   Sun,
   Moon,
   Menu,
+  ExternalLink,
 } from "lucide-react";
 
 interface SearchResult {
@@ -31,6 +32,7 @@ interface SearchResult {
     name: string;
     rating: number;
     tags: string[];
+    url: string;
     dailyProblems: { id: string; tier: string; date: string }[];
   }[];
 }
@@ -94,15 +96,7 @@ export function Navbar() {
   };
 
   const username = user?.username;
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!username) return;
-    fetch(`/api/users/${username}`)
-      .then((r) => r.json())
-      .then((d) => setAvatarUrl(d.avatarUrl || d.discordAvatar))
-      .catch(() => {});
-  }, [username]);
+  const avatarUrl = user?.image || null;
 
   const navLinks = (
     <>
@@ -138,7 +132,7 @@ export function Navbar() {
         <div ref={ref} className="relative">
           <button
             onClick={() => setOpen(!open)}
-            className="p-2 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-800 hover:bg-gray-100 transition-colors text-gray-400 hover:text-white"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-gray-800 dark:hover:bg-gray-800 hover:bg-gray-100 transition-colors text-gray-400 hover:text-white"
           >
             <Search className="w-4 h-4" />
           </button>
@@ -201,29 +195,37 @@ export function Navbar() {
                 {!searching && results?.problems.length ? (
                   <div>
                     <div className="px-3 py-1.5 text-xs font-medium text-gray-500 uppercase">Problems</div>
-                    {results.problems.map((p) => (
-                      <Link
-                        key={p.id}
-                        href={p.dailyProblems[0] ? `/problem/${p.dailyProblems[0].id}` : "#"}
-                        onClick={() => { setOpen(false); setQuery(""); }}
-                        className="flex items-center justify-between px-3 py-2 hover:bg-gray-800 dark:hover:bg-gray-800 hover:bg-gray-100 transition-colors"
-                      >
-                        <div className="min-w-0">
-                          <p className="text-sm text-gray-200 truncate">{p.name}</p>
-                          <p className="text-xs text-gray-500">
-                            {p.tags.slice(0, 2).join(", ")}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {p.dailyProblems[0] && (
-                            <span className={`text-xs ${tierColors[p.dailyProblems[0].tier] || "text-gray-500"}`}>
-                              {p.dailyProblems[0].tier}
-                            </span>
-                          )}
-                          <span className="text-xs font-mono text-gray-400">{p.rating}</span>
-                        </div>
-                      </Link>
-                    ))}
+                    {results.problems.map((p) => {
+                      const dp = p.dailyProblems[0];
+                      return (
+                        <Link
+                          key={p.id}
+                          href={dp ? `/problem/${dp.id}` : p.url}
+                          target={dp ? undefined : "_blank"}
+                          rel={dp ? undefined : "noopener noreferrer"}
+                          title={dp ? undefined : "Not featured as a daily problem yet — opens on Codeforces in a new tab"}
+                          onClick={() => { setOpen(false); setQuery(""); }}
+                          className="flex items-center justify-between px-3 py-2 hover:bg-gray-800 dark:hover:bg-gray-800 hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm text-gray-200 truncate">{p.name}</p>
+                            <p className="text-xs text-gray-500">
+                              {p.tags.slice(0, 2).join(", ")}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {dp ? (
+                              <span className={`text-xs ${tierColors[dp.tier] || "text-gray-500"}`}>
+                                {dp.tier}
+                              </span>
+                            ) : (
+                              <ExternalLink className="w-3 h-3 text-gray-500" />
+                            )}
+                            <span className="text-xs font-mono text-gray-400">{p.rating}</span>
+                          </div>
+                        </Link>
+                      );
+                    })}
                   </div>
                 ) : null}
               </div>
@@ -234,7 +236,7 @@ export function Navbar() {
         {/* Theme toggle */}
         <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="p-2 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-800 hover:bg-gray-100 transition-colors text-gray-400 hover:text-white"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-gray-800 dark:hover:bg-gray-800 hover:bg-gray-100 transition-colors text-gray-400 hover:text-white"
           title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
         >
           {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -260,7 +262,7 @@ export function Navbar() {
             </Link>
             <button
               onClick={() => signOut()}
-              className="p-2 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-800 hover:bg-gray-100 transition-colors text-gray-400 hover:text-white"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-gray-800 dark:hover:bg-gray-800 hover:bg-gray-100 transition-colors text-gray-400 hover:text-white"
               title="Sign out"
             >
               <LogOut className="w-4 h-4" />
@@ -280,7 +282,7 @@ export function Navbar() {
         <div ref={mobileRef} className="sm:hidden relative">
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="p-2 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-800 hover:bg-gray-100 transition-colors text-gray-400 hover:text-white"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-gray-800 dark:hover:bg-gray-800 hover:bg-gray-100 transition-colors text-gray-400 hover:text-white"
           >
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>

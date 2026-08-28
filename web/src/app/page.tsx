@@ -50,7 +50,7 @@ export default async function HomePage() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-12">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-3">
+        <h1 className="text-4xl font-bold tracking-tight mb-3">
           Daily <span className="text-cyan-400">Codeforces</span> Problems
         </h1>
         <p className="text-gray-500 dark:text-gray-400 text-lg">

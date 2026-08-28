@@ -5,6 +5,20 @@ import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
+const MAX_COMMENT_LENGTH = 3000;
+const RATE_LIMIT_WINDOW = 60_000;
+const RATE_LIMIT_MAX = 15;
+const rateLimitMap = new Map<string, number[]>();
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const recent = (rateLimitMap.get(userId) || []).filter((t) => now - t < RATE_LIMIT_WINDOW);
+  if (recent.length >= RATE_LIMIT_MAX) return false;
+  recent.push(now);
+  rateLimitMap.set(userId, recent);
+  return true;
+}
+
 export async function GET(req: NextRequest) {
   const dailyProblemId = req.nextUrl.searchParams.get("dailyProblemId");
   if (!dailyProblemId) {
@@ -53,9 +67,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Sign in to comment" }, { status: 401 });
   }
 
+  if (!checkRateLimit(userId)) {
+    return NextResponse.json({ error: "Too many comments. Please slow down." }, { status: 429 });
+  }
+
   const { dailyProblemId, content, parentId } = await req.json();
   if (!dailyProblemId || !content?.trim()) {
     return NextResponse.json({ error: "dailyProblemId and content required" }, { status: 400 });
+  }
+
+  if (content.trim().length > MAX_COMMENT_LENGTH) {
+    return NextResponse.json({ error: `Comment too long (max ${MAX_COMMENT_LENGTH} characters)` }, { status: 400 });
   }
 
   if (parentId) {

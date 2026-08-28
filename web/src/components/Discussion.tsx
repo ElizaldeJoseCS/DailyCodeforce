@@ -85,7 +85,7 @@ function CommentItem({
 
         <div className="flex items-center gap-4 ml-8 mt-2">
           <button
-            onClick={() => onVote(comment.id)}
+            onClick={() => session && onVote(comment.id)}
             className={`flex items-center gap-1 text-xs transition-colors ${
               comment.userVote
                 ? "text-cyan-400"
@@ -185,6 +185,7 @@ export default function Discussion({ dailyProblemId }: { dailyProblemId: string 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ commentId }),
       });
+      if (!res.ok) return;
       const data = await res.json();
       setComments((prev) =>
         prev.map((c) => {
