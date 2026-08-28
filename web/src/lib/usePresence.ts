@@ -2,16 +2,29 @@
 
 import { useEffect, useState, useRef } from "react";
 
+function getClientId(): string {
+  const key = "dcf-presence-id";
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
 export function usePresence() {
   const [count, setCount] = useState(0);
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     let reconnectTimer: NodeJS.Timeout;
+    const clientId = getClientId();
 
     function connect() {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+      const ws = new WebSocket(
+        `${protocol}//${window.location.host}/ws?cid=${clientId}`
+      );
       wsRef.current = ws;
 
       ws.onmessage = (e) => {
