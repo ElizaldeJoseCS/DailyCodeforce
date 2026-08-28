@@ -99,7 +99,7 @@ async function postEditorials() {
   today.setHours(0, 0, 0, 0);
 
   const problems = await prisma.dailyProblem.findMany({
-    where: { date: today, editorial: { not: null } },
+    where: { date: today, editorial: { not: null }, discordPostedAt: null },
     include: { problem: true },
   });
 
@@ -107,7 +107,7 @@ async function postEditorials() {
   problems.sort((a, b) => (tierOrder[a.tier] || 99) - (tierOrder[b.tier] || 99));
 
   if (problems.length === 0) {
-    console.log("No editorials to post for today");
+    console.log("No editorials to post for today (already posted, or none generated yet)");
     return;
   }
 
@@ -160,6 +160,10 @@ async function postEditorials() {
     const threadId = await createForumThread(threadName, embeds);
 
     if (threadId) {
+      await prisma.dailyProblem.update({
+        where: { id: dp.id },
+        data: { discordPostedAt: new Date() },
+      });
       console.log(`✅ Posted ${p.name} (thread ${threadId})`);
     } else {
       console.error(`❌ Failed to post ${p.name}`);

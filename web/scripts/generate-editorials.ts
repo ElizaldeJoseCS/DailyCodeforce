@@ -4,7 +4,7 @@ import { readFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { generateValidatedEditorial } from "../src/lib/editorial.js";
-import { scrapeProblemStatement } from "../src/lib/codeforces.js";
+import { scrapeProblemStatement, ProblemStatement } from "../src/lib/codeforces.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -71,14 +71,15 @@ async function generateEditorials() {
     const p = dp.problem;
     try {
       console.log(`Generating for "${p.name}"...`);
-      const statement = await scrapeProblemStatement(
+      const cachedStatement = p.statement as ProblemStatement | null;
+      const statement = cachedStatement || await scrapeProblemStatement(
         p.cfContestId,
         p.cfIndex
       );
 
       const testCases = (p.testCases as { input: string; output: string }[] | null) || undefined;
 
-      const editorial = await generateValidatedEditorial(
+      const { editorial, validated } = await generateValidatedEditorial(
         p.name,
         p.tags,
         p.rating,
@@ -93,7 +94,13 @@ async function generateEditorials() {
         data: { editorial },
       });
 
-      console.log(`✅ ${p.name}${testCases ? " (validated)" : " (no test cases)"}`);
+      if (validated) {
+        console.log(`✅ ${p.name} (validated against ${testCases?.length ?? 0}+ test cases)`);
+      } else if (testCases && testCases.length > 0) {
+        console.log(`⚠️  ${p.name} (FAILED validation after retries — saved anyway, needs review)`);
+      } else {
+        console.log(`➖ ${p.name} (no test cases available, unvalidated)`);
+      }
       await new Promise((r) => setTimeout(r, 2000));
     } catch (err) {
       console.error(`❌ ${p.name}:`, err);

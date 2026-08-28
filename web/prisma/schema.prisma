@@ -25,6 +25,7 @@ model User {
   socialLinks     Json?
   profileLayout   Json?
   avatarFrame     String?        @default("none")
+  titleBadge      String?
   discordId       String?        @unique
   discordAvatar   String?
   role            String         @default("user")
@@ -61,6 +62,7 @@ model Problem {
   tags          String[]
   url           String
   testCases     Json?
+  statement     Json?
   createdAt     DateTime       @default(now())
   dailyProblems DailyProblem[]
 
@@ -76,6 +78,7 @@ model DailyProblem {
   date          DateTime
   editorialUrl  String?
   editorial     String?
+  discordPostedAt DateTime?
   createdAt     DateTime       @default(now())
   progress      UserProgress[]
   reports       EditorialReport[]

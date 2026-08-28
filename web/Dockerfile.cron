@@ -2,12 +2,14 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY package.cron.json ./package.json
 COPY prisma ./prisma/
-RUN npm ci
-
-COPY . .
+RUN npm install
 RUN npx prisma generate
+
+COPY src/generated ./src/generated/
+COPY src/lib ./src/lib/
+COPY scripts ./scripts/
 
 RUN chmod +x scripts/daily.sh
 

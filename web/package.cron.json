@@ -1,0 +1,13 @@
+{
+  "name": "dailycodeforce-cron",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@anthropic-ai/sdk": "*",
+    "@prisma/adapter-pg": "*",
+    "@prisma/client": "*",
+    "cheerio": "*",
+    "pg": "*",
+    "prisma": "*"
+  }
+}

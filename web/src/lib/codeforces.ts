@@ -340,8 +340,8 @@ export async function scrapeProblemStatement(
     const outputs = $(el).find("div.output pre");
     const count = Math.max(inputs.length, outputs.length);
     for (let i = 0; i < count; i++) {
-      const input = $(inputs[i]).text().trim();
-      const output = $(outputs[i]).text().trim();
+      const input = extractPreText($, $(inputs[i]));
+      const output = extractPreText($, $(outputs[i]));
       if (input || output) examples.push({ input, output });
     }
   });
