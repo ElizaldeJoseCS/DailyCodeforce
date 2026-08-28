@@ -3,6 +3,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { readFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+import { scrapeProblemStatement } from "../src/lib/codeforces.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -57,29 +58,6 @@ async function fetchAllProblems(): Promise<CFProblem[]> {
   return data.result.problems.filter(
     (p) => p.rating !== undefined && p.rating !== null
   );
-}
-
-async function scrapeTestCases(contestId: number, index: string): Promise<{ input: string; output: string }[]> {
-  const { load } = await import("cheerio");
-  const url = `https://codeforces.com/problemset/problem/${contestId}/${index}`;
-  const res = await fetch(url, {
-    headers: { "User-Agent": "DailyCodeforceBot/1.0" },
-  });
-  if (!res.ok) return [];
-  const html = await res.text();
-  const $ = load(html);
-  const examples: { input: string; output: string }[] = [];
-  $("div.sample-test").each((_, el) => {
-    const inputs = $(el).find("div.input pre");
-    const outputs = $(el).find("div.output pre");
-    const count = Math.max(inputs.length, outputs.length);
-    for (let i = 0; i < count; i++) {
-      const input = $(inputs[i]).text().trim();
-      const output = $(outputs[i]).text().trim();
-      if (input || output) examples.push({ input, output });
-    }
-  });
-  return examples;
 }
 
 function problemUrl(p: { contestId: number; index: string }): string {
@@ -156,22 +134,27 @@ async function seedProblems() {
       update: {},
     });
 
-    // Scrape test cases if missing
+    // Scrape the full statement (once) if missing — this also gives us the
+    // sample test cases, so the page and editorial generation can both read
+    // the cached statement/testCases instead of re-scraping Codeforces later.
     const existingProblem = await prisma.problem.findUnique({
       where: { id: problem.id },
-      select: { testCases: true },
+      select: { statement: true, testCases: true },
     });
-    if (!existingProblem?.testCases) {
-      console.log(`  Scraping test cases for ${picked.name}...`);
-      const testCases = await scrapeTestCases(picked.contestId, picked.index);
-      if (testCases.length > 0) {
+    if (!existingProblem?.statement) {
+      console.log(`  Scraping statement for ${picked.name}...`);
+      const statement = await scrapeProblemStatement(picked.contestId, picked.index);
+      if (statement) {
         await prisma.problem.update({
           where: { id: problem.id },
-          data: { testCases: testCases as unknown as Record<string, unknown>[] },
+          data: {
+            statement: statement as unknown as Record<string, unknown>,
+            testCases: statement.examples as unknown as Record<string, unknown>[],
+          },
         });
-        console.log(`  → ${testCases.length} test cases saved`);
+        console.log(`  → statement cached, ${statement.examples.length} test cases saved`);
       } else {
-        console.log(`  → No test cases found`);
+        console.log(`  → Failed to scrape statement`);
       }
       await new Promise((r) => setTimeout(r, 1500));
     }
