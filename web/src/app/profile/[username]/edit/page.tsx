@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { ArrowLeft } from "lucide-react";
 import ProfileEditor from "@/components/ProfileEditor";
+import type { BadgeProgress } from "@/lib/badges";
 
 interface SocialLinks {
   github?: string;
@@ -28,6 +29,8 @@ interface ProfileData {
   accentColor: string;
   socialLinks: SocialLinks;
   profileLayout: ProfileLayout;
+  avatarFrame: string;
+  titleBadge: string | null;
 }
 
 export default function EditProfilePage() {
@@ -36,6 +39,7 @@ export default function EditProfilePage() {
   const { data: session, status } = useSession();
   const username = params.username as string;
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [badgeProgress, setBadgeProgress] = useState<BadgeProgress | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,6 +67,17 @@ export default function EditProfilePage() {
           accentColor: data.accentColor || "#22d3ee",
           socialLinks: data.socialLinks || {},
           profileLayout: data.profileLayout || { showStats: true, showSolves: true, bioPosition: "top" },
+          avatarFrame: data.avatarFrame || "none",
+          titleBadge: data.titleBadge || null,
+        });
+        setBadgeProgress({
+          totalSolved: data.totalSolved || 0,
+          currentStreak: data.currentStreak || 0,
+          longestStreak: data.longestStreak || 0,
+          progress: (data.progress || []).map((p: { verified: boolean; dailyProblem: { tier: string } }) => ({
+            verified: p.verified,
+            dailyProblem: { tier: p.dailyProblem.tier },
+          })),
         });
         setLoading(false);
       })
@@ -80,7 +95,7 @@ export default function EditProfilePage() {
     router.refresh();
   };
 
-  if (loading || !profile) {
+  if (loading || !profile || !badgeProgress) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="animate-pulse space-y-6">
@@ -103,7 +118,12 @@ export default function EditProfilePage() {
 
       <h1 className="text-2xl font-bold mb-6">Edit Profile</h1>
 
-      <ProfileEditor profile={profile} onSave={handleSave} />
+      <ProfileEditor
+        profile={profile}
+        badgeProgress={badgeProgress}
+        isAdmin={(session?.user as Record<string, string>)?.role === "admin"}
+        onSave={handleSave}
+      />
     </div>
   );
 }

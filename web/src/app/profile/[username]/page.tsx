@@ -15,6 +15,7 @@ import {
   Globe,
   Edit3,
 } from "lucide-react";
+import { getEarnedBadges, getFrameForBadgeId, getTitleForBadgeId } from "@/lib/badges";
 
 interface SocialLinks {
   github?: string;
@@ -41,6 +42,7 @@ interface UserProfile {
   socialLinks: SocialLinks | null;
   profileLayout: ProfileLayout | null;
   avatarFrame: string | null;
+  titleBadge: string | null;
   discordAvatar: string | null;
   currentStreak: number;
   longestStreak: number;
@@ -57,59 +59,6 @@ interface UserProfile {
   }[];
 }
 
-function getFrameStyle(streak: number): { class: string; label: string } {
-  if (streak >= 100) return { class: "ring-4 ring-purple-400/60 shadow-[0_0_20px_rgba(168,85,247,0.4)]", label: "Diamond" };
-  if (streak >= 30) return { class: "ring-4 ring-yellow-400/60 shadow-[0_0_20px_rgba(250,204,21,0.4)]", label: "Gold" };
-  if (streak >= 7) return { class: "ring-4 ring-orange-400/60 shadow-[0_0_20px_rgba(249,115,22,0.4)]", label: "Fire" };
-  return { class: "", label: "" };
-}
-
-interface Badge {
-  id: string;
-  name: string;
-  icon: string;
-  description: string;
-  color: string;
-}
-
-function getBadges(profile: UserProfile): Badge[] {
-  const badges: Badge[] = [];
-  const p = profile;
-
-  // First solve
-  if (p.totalSolved >= 1) badges.push({ id: "first-blood", name: "First Blood", icon: "🩸", description: "Solved your first problem", color: "text-red-400" });
-
-  // Solve milestones
-  if (p.totalSolved >= 5) badges.push({ id: "solved-5", name: "Getting Started", icon: "⭐", description: "Solved 5 problems", color: "text-yellow-400" });
-  if (p.totalSolved >= 10) badges.push({ id: "solved-10", name: "Double Digits", icon: "🔟", description: "Solved 10 problems", color: "text-yellow-400" });
-  if (p.totalSolved >= 25) badges.push({ id: "solved-25", name: "Dedicated", icon: "💎", description: "Solved 25 problems", color: "text-cyan-400" });
-  if (p.totalSolved >= 50) badges.push({ id: "solved-50", name: "Half Century", icon: "🏆", description: "Solved 50 problems", color: "text-yellow-400" });
-  if (p.totalSolved >= 100) badges.push({ id: "solved-100", name: "Century", icon: "👑", description: "Solved 100 problems", color: "text-purple-400" });
-
-  // Streak badges
-  if (p.currentStreak >= 3) badges.push({ id: "streak-3", name: "On Fire", icon: "🔥", description: "3-day streak", color: "text-orange-400" });
-  if (p.longestStreak >= 7) badges.push({ id: "streak-7", name: "Week Warrior", icon: "⚔️", description: "7-day streak achieved", color: "text-orange-400" });
-  if (p.longestStreak >= 14) badges.push({ id: "streak-14", name: "Fortnight Champion", icon: "🗓️", description: "14-day streak achieved", color: "text-orange-400" });
-  if (p.longestStreak >= 30) badges.push({ id: "streak-30", name: "Monthly Master", icon: "🌟", description: "30-day streak achieved", color: "text-yellow-400" });
-  if (p.longestStreak >= 100) badges.push({ id: "streak-100", name: "Legendary", icon: "🦄", description: "100-day streak achieved", color: "text-purple-400" });
-
-  // Tier badges — check if user has solved problems in each tier
-  const tierSolved = new Set(p.progress.map((pr) => pr.dailyProblem.tier));
-  if (tierSolved.has("beginner")) badges.push({ id: "tier-beginner", name: "Beginner Cleared", icon: "🟢", description: "Solved a beginner problem", color: "text-emerald-400" });
-  if (tierSolved.has("intermediate")) badges.push({ id: "tier-intermediate", name: "Intermediate Done", icon: "🔵", description: "Solved an intermediate problem", color: "text-blue-400" });
-  if (tierSolved.has("advanced")) badges.push({ id: "tier-advanced", name: "Advanced Ace", icon: "🟠", description: "Solved an advanced problem", color: "text-orange-400" });
-  if (tierSolved.has("expert")) badges.push({ id: "tier-expert", name: "Expert Elite", icon: "🔴", description: "Solved an expert problem", color: "text-red-400" });
-
-  // All tiers
-  if (tierSolved.size >= 4) badges.push({ id: "all-tiers", name: "All-Rounder", icon: "🌈", description: "Solved problems in all 4 tiers", color: "text-cyan-400" });
-
-  // Verified badge
-  const verifiedCount = p.progress.filter((pr) => pr.verified).length;
-  if (verifiedCount >= 5) badges.push({ id: "verified-5", name: "Verified Solver", icon: "✅", description: "5 verified solves", color: "text-green-400" });
-  if (verifiedCount >= 20) badges.push({ id: "verified-20", name: "Trusted", icon: "🛡️", description: "20 verified solves", color: "text-green-400" });
-
-  return badges;
-}
 
 function ActivityHeatmap({ progress }: { progress: UserProfile["progress"] }) {
   const today = new Date();
@@ -261,7 +210,8 @@ export default function ProfilePage() {
   const accent = profile.accentColor || "#22d3ee";
   const bg = profile.backgroundColor || "#030712";
   const avatar = profile.avatarUrl || profile.discordAvatar;
-  const frame = getFrameStyle(profile.currentStreak);
+  const frame = getFrameForBadgeId(profile.avatarFrame) || { class: "", label: "", icon: "" };
+  const equippedTitle = getTitleForBadgeId(profile.titleBadge);
   const socials = profile.socialLinks as SocialLinks | null;
   const layout = profile.profileLayout || { showStats: true, showSolves: true, bioPosition: "top" as const };
 
@@ -273,12 +223,9 @@ export default function ProfilePage() {
   };
 
   const ratingColor = (r: number) => {
-    if (r < 1200) return "text-gray-400";
-    if (r < 1400) return "text-green-400";
-    if (r < 1600) return "text-cyan-400";
-    if (r < 1900) return "text-blue-400";
-    if (r < 2100) return "text-purple-400";
-    if (r < 2400) return "text-orange-400";
+    if (r < 1100) return "text-emerald-400";
+    if (r < 1600) return "text-blue-400";
+    if (r < 2100) return "text-orange-400";
     return "text-red-400";
   };
 
@@ -321,16 +268,27 @@ export default function ProfilePage() {
 
         {/* Profile Header */}
         <div className="flex items-end gap-6 -mt-16 mb-8 relative z-10 px-4">
-        <div
-          className={`w-28 h-28 rounded-full border-4 overflow-hidden flex-shrink-0 ${frame.class}`}
-          style={{ borderColor: bg, backgroundColor: "#1f2937" }}
-        >
-          {avatar ? (
-            <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-gray-500">
-              {(profile.displayName || profile.username)[0].toUpperCase()}
-            </div>
+        <div className="relative flex-shrink-0">
+          <div
+            className={`w-28 h-28 rounded-full border-4 overflow-hidden ${frame.class}`}
+            style={{ borderColor: bg, backgroundColor: "#1f2937" }}
+          >
+            {avatar ? (
+              <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-gray-500">
+                {(profile.displayName || profile.username)[0].toUpperCase()}
+              </div>
+            )}
+          </div>
+          {frame.icon && (
+            <span
+              className="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-gray-900 border-2 flex items-center justify-center text-lg"
+              style={{ borderColor: bg }}
+              title={`${frame.label} frame`}
+            >
+              {frame.icon}
+            </span>
           )}
         </div>
         <div className="pt-16 pb-1 flex-1 min-w-0">
@@ -338,6 +296,11 @@ export default function ProfilePage() {
             <h1 className="text-2xl font-bold" style={{ color: accent }}>
               {profile.displayName || profile.username}
             </h1>
+            {equippedTitle && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-cyan-400 border border-cyan-500/20">
+                {equippedTitle}
+              </span>
+            )}
             {frame.label && (
               <span className="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-orange-400 border border-orange-500/20">
                 {frame.label} Frame
@@ -422,7 +385,7 @@ export default function ProfilePage() {
 
       {/* Badges */}
       {(() => {
-        const badges = getBadges(profile);
+        const badges = getEarnedBadges(profile);
         if (badges.length === 0) return null;
         return (
           <div className="mb-8 px-4">

@@ -8,7 +8,9 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  Lock,
 } from "lucide-react";
+import { getAllBadgeDefs, isBadgeEarned, type BadgeProgress } from "@/lib/badges";
 
 interface SocialLinks {
   github?: string;
@@ -31,6 +33,8 @@ interface ProfileData {
   accentColor: string;
   socialLinks: SocialLinks;
   profileLayout: ProfileLayout;
+  avatarFrame: string;
+  titleBadge: string | null;
 }
 
 const PRESET_COLORS = [
@@ -76,9 +80,13 @@ function Section({
 
 export default function ProfileEditor({
   profile,
+  badgeProgress,
+  isAdmin,
   onSave,
 }: {
   profile: ProfileData;
+  badgeProgress: BadgeProgress;
+  isAdmin?: boolean;
   onSave: (data: Record<string, unknown>) => Promise<void>;
 }) {
   const [form, setForm] = useState(profile);
@@ -90,6 +98,7 @@ export default function ProfileEditor({
   const [success, setSuccess] = useState("");
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     appearance: true,
+    cosmetics: true,
     social: true,
     layout: false,
   });
@@ -147,6 +156,8 @@ export default function ProfileEditor({
         accentColor: form.accentColor,
         socialLinks: form.socialLinks,
         profileLayout: form.profileLayout,
+        avatarFrame: form.avatarFrame,
+        titleBadge: form.titleBadge,
       });
       setSuccess("Profile updated!");
       setTimeout(() => setSuccess(""), 3000);
@@ -312,6 +323,112 @@ export default function ProfileEditor({
                 className="w-8 h-8 rounded-lg border-2 border-gray-700 cursor-pointer"
               />
             </div>
+          </div>
+        </div>
+      </Section>
+
+      {/* Cosmetics */}
+      <Section expanded={expandedSections.cosmetics} onToggle={() => toggle("cosmetics")} title="Cosmetics">
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Avatar Frame</label>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => setForm((f) => ({ ...f, avatarFrame: "none" }))}
+              className={`flex flex-col items-center gap-1 ${form.avatarFrame === "none" ? "" : "opacity-70 hover:opacity-100"}`}
+            >
+              <div
+                className={`w-12 h-12 rounded-full bg-gray-700 border-2 ${
+                  form.avatarFrame === "none" ? "border-cyan-400" : "border-transparent"
+                }`}
+              />
+              <span className="text-[10px] text-gray-500">None</span>
+            </button>
+            {getAllBadgeDefs()
+              .filter((b) => b.unlocks?.frame)
+              .map((b) => {
+                const frame = b.unlocks!.frame!;
+                return (
+                  <button
+                    key={b.id}
+                    onClick={() => setForm((f) => ({ ...f, avatarFrame: b.id }))}
+                    title={frame.label}
+                    className={`flex flex-col items-center gap-1 ${
+                      form.avatarFrame === b.id ? "" : "opacity-70 hover:opacity-100"
+                    }`}
+                  >
+                    <div className="relative">
+                      <div
+                        className={`w-12 h-12 rounded-full bg-gray-700 ${frame.class} ${
+                          form.avatarFrame === b.id ? "outline outline-2 outline-cyan-400 outline-offset-2" : ""
+                        }`}
+                      />
+                      <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gray-900 border border-gray-700 flex items-center justify-center text-[10px] leading-none">
+                        {frame.icon}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-gray-500">{frame.label}</span>
+                  </button>
+                );
+              })}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Badge Name Colors</label>
+          <div className="flex flex-wrap gap-2">
+            {getAllBadgeDefs()
+              .filter((b) => b.unlocks?.nameColor)
+              .map((b) => {
+                const color = b.unlocks!.nameColor!;
+                return (
+                  <button
+                    key={b.id}
+                    onClick={() => setForm((f) => ({ ...f, accentColor: color }))}
+                    title={`${b.name} — ${color}`}
+                    className={`w-8 h-8 rounded-lg border-2 transition-colors ${
+                      form.accentColor === color ? "border-white scale-110" : "border-gray-700 hover:border-gray-500"
+                    }`}
+                    style={{ backgroundColor: color }}
+                  />
+                );
+              })}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Profile Title</label>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setForm((f) => ({ ...f, titleBadge: null }))}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                !form.titleBadge ? "bg-cyan-600 border-cyan-500 text-white" : "border-gray-700 text-gray-400 hover:bg-gray-800"
+              }`}
+            >
+              None
+            </button>
+            {getAllBadgeDefs()
+              .filter((b) => b.unlocks?.title)
+              .map((b) => {
+                const earned = isAdmin || isBadgeEarned(b.id, badgeProgress);
+                return (
+                  <button
+                    key={b.id}
+                    disabled={!earned}
+                    onClick={() => earned && setForm((f) => ({ ...f, titleBadge: b.id }))}
+                    title={earned ? b.name : `Locked — ${b.description}`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                      !earned
+                        ? "border-gray-800 text-gray-600 cursor-not-allowed"
+                        : form.titleBadge === b.id
+                          ? "bg-cyan-600 border-cyan-500 text-white"
+                          : "border-gray-700 text-gray-400 hover:bg-gray-800"
+                    }`}
+                  >
+                    {!earned && <Lock className="w-3 h-3" />}
+                    {b.unlocks!.title}
+                  </button>
+                );
+              })}
           </div>
         </div>
       </Section>

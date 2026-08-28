@@ -22,6 +22,7 @@ export async function GET(
       socialLinks: true,
       profileLayout: true,
       avatarFrame: true,
+      titleBadge: true,
       discordAvatar: true,
       currentStreak: true,
       longestStreak: true,
