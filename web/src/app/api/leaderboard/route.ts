@@ -14,6 +14,19 @@ export async function GET() {
   const userIds = progress.map((p) => p.userId);
   const users = await prisma.user.findMany({
     where: { id: { in: userIds } },
+    select: {
+      id: true,
+      username: true,
+      displayName: true,
+      avatarUrl: true,
+      discordAvatar: true,
+      accentColor: true,
+      avatarFrame: true,
+      titleBadge: true,
+      currentStreak: true,
+      longestStreak: true,
+      totalSolved: true,
+    },
   });
 
   const leaderboard = progress.map((p, i) => ({
