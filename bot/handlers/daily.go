@@ -229,7 +229,7 @@ func buildProblemEmbed(name string, rating int, url, tags, emoji string, color i
 	}
 
 	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-		Name:  "🔗 Solve it",
+		Name:  "Open Problem",
 		Value: fmt.Sprintf("[Codeforces →](%s)", url),
 	})
 

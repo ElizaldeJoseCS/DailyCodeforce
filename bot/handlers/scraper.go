@@ -228,7 +228,11 @@ func renderNodeText(node *html.Node) string {
 					parts = append(parts, t)
 				}
 			}
-			return strings.TrimSpace(strings.Join(parts, ""))
+			text := strings.TrimSpace(strings.Join(parts, " "))
+			if text != "" {
+				return text + "\n\n"
+			}
+			return ""
 		case "ul", "ol":
 			var items []string
 			for child := node.FirstChild; child != nil; child = child.NextSibling {
@@ -250,7 +254,31 @@ func renderNodeText(node *html.Node) string {
 			return strings.TrimSpace(strings.Join(parts, ""))
 		case "br":
 			return "\n"
-		case "span", "a", "b", "i", "u", "em", "strong", "sub", "sup":
+		case "b", "strong":
+			var parts []string
+			for child := node.FirstChild; child != nil; child = child.NextSibling {
+				if t := renderNodeText(child); t != "" {
+					parts = append(parts, t)
+				}
+			}
+			text := strings.TrimSpace(strings.Join(parts, ""))
+			if text != "" {
+				return "**" + text + "**"
+			}
+			return ""
+		case "i", "em":
+			var parts []string
+			for child := node.FirstChild; child != nil; child = child.NextSibling {
+				if t := renderNodeText(child); t != "" {
+					parts = append(parts, t)
+				}
+			}
+			text := strings.TrimSpace(strings.Join(parts, ""))
+			if text != "" {
+				return "*" + text + "*"
+			}
+			return ""
+		case "span", "a", "u", "sub", "sup":
 			var parts []string
 			for child := node.FirstChild; child != nil; child = child.NextSibling {
 				if t := renderNodeText(child); t != "" {
