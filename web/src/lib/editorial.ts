@@ -24,6 +24,12 @@ function getAnthropic() {
 interface LLMResponse {
   text: string;
   provider: string;
+  truncated: boolean;
+}
+
+interface RawLLMResult {
+  text: string;
+  truncated: boolean;
 }
 
 async function callGemini(
@@ -31,7 +37,7 @@ async function callGemini(
   userContent: string,
   maxTokens: number,
   retries = 3
-): Promise<string> {
+): Promise<RawLLMResult> {
   if (!getGeminiKey()) {
     throw new Error("No GEMINI_API_KEY configured");
   }
@@ -71,7 +77,7 @@ async function callGemini(
     if (text.length === 0) {
       throw new Error("Gemini returned empty response");
     }
-    return text;
+    return { text, truncated: data.choices?.[0]?.finish_reason === "length" };
   }
   throw lastError || new Error("Gemini failed after retries");
 }
@@ -80,7 +86,7 @@ async function callHaiku(
   systemPrompt: string,
   userContent: string,
   maxTokens: number
-): Promise<string> {
+): Promise<RawLLMResult> {
   if (CLAUDE_DISABLED) {
     throw new Error("Claude API is disabled");
   }
@@ -90,12 +96,13 @@ async function callHaiku(
     system: systemPrompt,
     messages: [{ role: "user", content: userContent }],
   });
+  const truncated = response.stop_reason === "max_tokens";
   for (const block of response.content) {
     if ("text" in block && block.type === "text") {
-      return block.text;
+      return { text: block.text, truncated };
     }
   }
-  return "";
+  return { text: "", truncated };
 }
 
 async function callLLM(
@@ -106,8 +113,8 @@ async function callLLM(
   // Always try Gemini first (free)
   if (getGeminiKey()) {
     try {
-      const text = await callGemini(systemPrompt, userContent, maxTokens);
-      return { text, provider: "gemini" };
+      const { text, truncated } = await callGemini(systemPrompt, userContent, maxTokens);
+      return { text, truncated, provider: "gemini" };
     } catch (err) {
       console.error(`Gemini failed: ${err}`);
     }
@@ -116,11 +123,11 @@ async function callLLM(
   // Last resort: Haiku (costs money — log it)
   console.warn(`⚠️ Falling back to Haiku (Claude API) — this costs money!`);
   try {
-    const text = await callHaiku(systemPrompt, userContent, maxTokens);
-    return { text, provider: "haiku" };
+    const { text, truncated } = await callHaiku(systemPrompt, userContent, maxTokens);
+    return { text, truncated, provider: "haiku" };
   } catch (err) {
     console.error(`Haiku also failed: ${err}`);
-    return { text: "", provider: "none" };
+    return { text: "", truncated: false, provider: "none" };
   }
 }
 
@@ -132,20 +139,45 @@ async function callGeminiOnly(
 ): Promise<LLMResponse> {
   if (!getGeminiKey()) {
     console.error("No GEMINI_API_KEY configured, skipping");
-    return { text: "", provider: "none" };
+    return { text: "", truncated: false, provider: "none" };
   }
   try {
-    const text = await callGemini(systemPrompt, userContent, maxTokens);
-    return { text, provider: "gemini" };
+    const { text, truncated } = await callGemini(systemPrompt, userContent, maxTokens);
+    return { text, truncated, provider: "gemini" };
   } catch (err) {
     console.error(`Gemini failed (no fallback): ${err}`);
-    return { text: "", provider: "none" };
+    return { text: "", truncated: false, provider: "none" };
   }
+}
+
+// Forces Haiku specifically (bypassing Gemini) — used for the final retry so a
+// systematic Gemini failure on a given problem doesn't just repeat itself.
+// Falls back to Gemini if Claude is disabled/unavailable, rather than giving up.
+async function callHaikuOnly(
+  systemPrompt: string,
+  userContent: string,
+  maxTokens: number
+): Promise<LLMResponse> {
+  if (!CLAUDE_DISABLED) {
+    try {
+      const { text, truncated } = await callHaiku(systemPrompt, userContent, maxTokens);
+      return { text, truncated, provider: "haiku" };
+    } catch (err) {
+      console.error(`Haiku failed: ${err}`);
+    }
+  }
+  return callGeminiOnly(systemPrompt, userContent, maxTokens);
 }
 
 const JUDGE_URL = process.env.JUDGE_URL || "http://judge:8080";
 
-const SYSTEM_PROMPT = `You are a world-class competitive programming tutor writing LeetCode-style editorials for Codeforces problems. Your solutions must be CORRECT and COMPLETE — they will be automatically tested against test cases. Write clear, educational explanations with working C++ code. Format in markdown with ## for sections, fenced code blocks for C++ solutions.`;
+const SYSTEM_PROMPT = `You are a world-class competitive programming tutor writing LeetCode-style editorials for Codeforces problems. Your solutions must be CORRECT and COMPLETE — they will be automatically tested against test cases. Write clear, educational explanations with working C++ code. Format in markdown with ## for sections, fenced code blocks for C++ solutions.
+
+Be concise. Every editorial MUST fit completely within your output budget — a response cut off before the closing \`\`\` of the code block is a hard failure. Keep prose tight: 2-4 short sentences per section is plenty. Do not pad with restating the problem statement. If you're running low on room, shorten the prose, never the code.
+
+Put exactly ONE fenced C++ code block in the entire response, in the final "Solution" section. Do not include any other code blocks (no illustrative snippets, no partial examples) anywhere else in the editorial — they cause automated extraction to grab the wrong block.
+
+NEVER use LaTeX math notation — no $ signs, no \\frac, \\le, \\ge, \\times, \\sum, \\dots, or subscript/superscript syntax like a_i or n^2. This site renders plain markdown only; LaTeX renders as literal dollar signs and backslashes, not math. Write all math in plain text/unicode instead: use <=, >=, *, ^, sqrt(), array-index notation like a[i] instead of a_i, and spell out complexity as O(n log n) with no delimiters at all.`;
 
 const ALGO_HINTS: Record<string, string> = {
   "implementation": "Carefully handle all edge cases. Read the problem statement literally — implement exactly what's asked.",
@@ -342,26 +374,77 @@ ${statement.note ? `**Note:** ${statement.note}` : ""}
 Generate 5 edge-case test cases. Output ONLY the JSON array.`;
 }
 
+const MAIN_FN_RE = /\b(int|signed|void)\s+main\s*\(/;
+
 export function extractCppCode(markdown: string): string | null {
-  // Try various C++ code block formats
+  // A model that includes a small illustrative snippet earlier (e.g. in the
+  // Approach section) can have multiple ```cpp blocks — grab every closed
+  // block and prefer the last one that's an actual runnable program (has a
+  // main()), since the real solution lives in the final "Solution" section.
+  // Falls back to the first block with #include, then the first block at all,
+  // for tolerance of minor formatting slips (missing language tag, etc).
   const patterns = [
-    /```cpp\n([\s\S]*?)```/,
-    /```c\+\+\n([\s\S]*?)```/,
-    /```C\+\+\n([\s\S]*?)```/,
-    /```cpp([\s\S]*?)```/,
-    /```c\+\+([\s\S]*?)```/,
+    /```(?:cpp|c\+\+|C\+\+)\n?([\s\S]*?)```/g,
+    /```\w*\n?([\s\S]*?)```/g,
   ];
+
   for (const re of patterns) {
-    const match = markdown.match(re);
-    if (match) return match[1].trim();
+    const blocks = Array.from(markdown.matchAll(re)).map((m) => m[1].trim());
+    if (blocks.length === 0) continue;
+
+    const withMain = blocks.filter((b) => MAIN_FN_RE.test(b));
+    if (withMain.length > 0) return withMain[withMain.length - 1];
+
+    const withInclude = blocks.find((b) => b.includes("#include"));
+    if (withInclude) return withInclude;
+
+    if (re === patterns[0]) return blocks[blocks.length - 1];
   }
-  // Fallback: find any code block containing #include
-  const allBlocks = Array.from(markdown.matchAll(/```[\s\S]*?```/g));
-  for (const block of allBlocks) {
-    const inner = block[0].replace(/^```\w*\n?/, "").replace(/```$/, "").trim();
-    if (inner.includes("#include")) return inner;
-  }
+
   return null;
+}
+
+const REQUIRED_SECTIONS = ["## Intuition", "## Approach", "## Complexity", "## Solution"];
+
+// Matches raw LaTeX that renders as literal text on this site (no math
+// renderer): $...$ inline math, or common LaTeX control sequences like
+// \frac, \le, a_i subscripts, etc. Checked against prose only (code blocks
+// stripped first) so legitimate uses of $ or \ inside C++ source don't trip it.
+const LATEX_RE = /\$[^$\n]{1,120}\$|\\(?:frac|le|ge|leq|geq|times|dots|ldots|cdot|sum|sqrt|in|neq|pmod|binom|lfloor|rfloor|lceil|rceil)\b|[A-Za-z]_\{?[A-Za-z0-9]/;
+
+function stripCodeBlocks(markdown: string): string {
+  return markdown.replace(/```[\s\S]*?```/g, "");
+}
+
+// Cheap, objective checks that don't require running anything: did the model
+// actually finish, did it include every required section, is there a
+// complete (has main()) C++ program to grade, and did it avoid raw LaTeX
+// (which this site has no renderer for and shows as literal $ signs).
+// Catches the "unfinished, missing a section, or full of LaTeX" failure
+// modes before it ever reaches the judge.
+function checkStructure(
+  editorial: string,
+  truncated: boolean
+): { ok: boolean; issues: string[]; cppCode: string | null } {
+  const issues: string[] = [];
+  if (truncated) {
+    issues.push("The response was cut off before finishing (hit the token limit).");
+  }
+  for (const heading of REQUIRED_SECTIONS) {
+    if (!editorial.includes(heading)) {
+      issues.push(`Missing the "${heading}" section.`);
+    }
+  }
+  if (LATEX_RE.test(stripCodeBlocks(editorial))) {
+    issues.push("Contains raw LaTeX math syntax (e.g. $...$, \\frac, \\le, a_i subscripts) which renders as literal text on this site — rewrite all math in plain text (a[i], <=, O(n log n)).");
+  }
+  const cppCode = extractCppCode(editorial);
+  if (!cppCode) {
+    issues.push("No parseable C++ code block found (missing ```cpp fence or it wasn't closed).");
+  } else if (!MAIN_FN_RE.test(cppCode)) {
+    issues.push("The C++ code block doesn't contain a main() function — it's not a complete program.");
+  }
+  return { ok: issues.length === 0, issues, cppCode };
 }
 
 // Whitespace-insensitive, float-tolerant comparison — mirrors the judge's
@@ -520,7 +603,7 @@ export async function generateValidatedEditorial(
   index: string,
   statement?: ProblemStatement | null,
   testCases?: { input: string; output: string }[]
-): Promise<{ editorial: string; validated: boolean }> {
+): Promise<{ editorial: string | null; validated: boolean }> {
   // Generate extra validation test cases (only if CF test cases are sparse)
   let extraTestCases: { input: string; output: string }[] = [];
   const cfTestCount = testCases?.length || 0;
@@ -548,45 +631,99 @@ export async function generateValidatedEditorial(
     memoryLimitMb: parseMemoryLimitMb(statement?.memoryLimit),
   };
 
+  const isInfraFailure = (details: string) =>
+    details === "Judge service unavailable" || details.startsWith("Judge error:");
+
   let editorial = "";
   let validated = false;
+  let structurallyOk = false;
   let lastFeedback: string | undefined;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    const isFinalAttempt = attempt === MAX_RETRIES;
+    structurallyOk = false;
+
     // Build a fresh prompt each retry instead of accumulating history
     const userContent = buildUserPrompt(
       problemName, tags, rating, contestId, index, statement, lastFeedback
     );
 
-    // First attempt uses callLLM (Gemini → Haiku fallback).
-    // Retries use Gemini only (free) to avoid burning credits.
+    // Attempt 1 uses callLLM (Gemini → Haiku fallback). Middle retries use
+    // Gemini only (free). The final attempt forces Haiku specifically —
+    // if Gemini has been consistently wrong or truncating on this problem,
+    // repeating the same model is unlikely to fix it; a different model
+    // gets one real shot before giving up.
     const result = attempt === 1
       ? await callLLM(SYSTEM_PROMPT, userContent, 16384)
-      : await callGeminiOnly(SYSTEM_PROMPT, userContent, 16384);
-    console.log(`  [${result.provider}] editorial attempt ${attempt}: ${result.text.length} chars`);
+      : isFinalAttempt
+        ? await callHaikuOnly(SYSTEM_PROMPT, userContent, 16384)
+        : await callGeminiOnly(SYSTEM_PROMPT, userContent, 16384);
 
+    console.log(`  [${result.provider}] editorial attempt ${attempt}: ${result.text.length} chars${result.truncated ? " (TRUNCATED)" : ""}`);
     editorial = result.text;
 
-    if (validationTestCases.length === 0) {
-      // No ground truth to check against — editorial is unvalidated, not failed.
-      break;
+    // Cheap, objective checks first — don't waste a judge call on output
+    // that's missing sections or was cut off before finishing.
+    const structure = checkStructure(editorial, result.truncated);
+    if (!structure.ok) {
+      console.log(`  ⚠️  structural issues: ${structure.issues.join(" ")}`);
+      if (!isFinalAttempt) {
+        lastFeedback = `Your previous response had structural problems:\n${structure.issues.map((i) => `- ${i}`).join("\n")}\n\nProvide a COMPLETE editorial with every required section (## Intuition, ## Approach, ## Complexity, ## Solution (C++)) and exactly one complete, properly closed C++ code block containing a full main() function. Be concise so the response fits comfortably — shorten prose, not code. Output the full editorial again from scratch.`;
+      }
+      continue;
+    }
+    structurallyOk = true;
+
+    const cppCode = structure.cppCode!;
+
+    if (validationTestCases.length > 0) {
+      const validation = await validateSolution(cppCode, validationTestCases, limits);
+
+      if (validation.passed) {
+        validated = true;
+        break;
+      }
+
+      if (isInfraFailure(validation.details)) {
+        // Judge was unreachable — not a code problem, don't burn a retry
+        // telling the model to "fix the algorithm" when nothing was wrong.
+        console.log(`  ⚠️  judge unavailable, accepting unvalidated: ${validation.details}`);
+        break;
+      }
+
+      if (!isFinalAttempt) {
+        lastFeedback = `Your solution failed on attempt ${attempt}. Here are the details:\n\n${validation.details}\n\nPlease provide a COMPLETE corrected solution that passes ALL test cases. Fix the algorithmic error and output the full editorial again.`;
+        continue;
+      }
+
+      // Final attempt still produces a demonstrably wrong answer against
+      // ground-truth test cases — refuse to ship a known-incorrect solution
+      // instead of saving it with just a console warning nobody watches.
+      console.error(`  ❌ solution failed validation on final attempt — refusing to save a known-incorrect editorial:\n${validation.details}`);
+      return { editorial: null, validated: false };
     }
 
-    const cppCode = extractCppCode(editorial);
-    if (!cppCode) {
-      break;
+    // No ground-truth test cases available to check behavior against — at
+    // least confirm the code compiles instead of skipping validation entirely.
+    const compileCheck = await validateSolution(cppCode, [], limits);
+    if (!compileCheck.passed && compileCheck.details.startsWith("Compilation Error")) {
+      console.log(`  ⚠️  compile-only check failed: ${compileCheck.details.split("\n")[0]}`);
+      if (!isFinalAttempt) {
+        lastFeedback = `Your solution does not compile:\n\n${compileCheck.details}\n\nProvide a COMPLETE corrected editorial with a solution that compiles cleanly.`;
+        continue;
+      }
+      console.error(`  ❌ solution still doesn't compile on final attempt — refusing to save a broken editorial`);
+      return { editorial: null, validated: false };
     }
 
-    const validation = await validateSolution(cppCode, validationTestCases, limits);
+    // Compiles cleanly (or judge was unreachable) but never behaviorally
+    // proven against real test cases — accurately reported as unvalidated.
+    break;
+  }
 
-    if (validation.passed) {
-      validated = true;
-      break;
-    }
-
-    if (attempt < MAX_RETRIES) {
-      lastFeedback = `Your solution failed on attempt ${attempt}. Here are the details:\n\n${validation.details}\n\nPlease provide a COMPLETE corrected solution that passes ALL test cases. Fix the algorithmic error and output the full editorial again.`;
-    }
+  if (!structurallyOk) {
+    console.error(`  ❌ editorial never reached a structurally complete state after ${MAX_RETRIES} attempts (missing sections, no code block, truncated, or raw LaTeX) — refusing to save a broken editorial`);
+    return { editorial: null, validated: false };
   }
 
   return { editorial, validated };
@@ -599,7 +736,7 @@ export async function generateEditorial(
   contestId: number,
   index: string,
   statement?: ProblemStatement | null
-): Promise<string> {
+): Promise<string | null> {
   const { editorial } = await generateValidatedEditorial(
     problemName, tags, rating, contestId, index, statement
   );

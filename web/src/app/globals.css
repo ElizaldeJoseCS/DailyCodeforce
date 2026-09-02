@@ -3,20 +3,73 @@
 @tailwind utilities;
 
 @import "highlight.js/styles/github-dark.css";
+@import url("https://fonts.googleapis.com/css2?family=VT323&display=swap");
 
 :root {
-  --background: #030712;
-  --foreground: #f9fafb;
+  --foreground: #eaf1fc;
+  --xp-titlebar-1: #3f8cf3;
+  --xp-titlebar-2: #1c5cd6;
+  --xp-titlebar-3: #163f8f;
+  --xp-titlebar-edge: #0a1d47;
+  --xp-chrome-hi: #fdfeff;
+  --xp-chrome-lo: #cfe0f9;
+  --xp-paper: #101a30;
+  --xp-shell-border: #24314f;
+  --xp-backdrop-1: #0d1526;
+  --xp-backdrop-2: #0a0f1e;
 }
 
 .light {
-  --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #131b30;
+  --xp-paper: #fffdf6;
+  --xp-shell-border: #7fa8e0;
+  --xp-backdrop-1: #3f8cf3;
+  --xp-backdrop-2: #0a3d7a;
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
+  font-family: Verdana, Tahoma, "Segoe UI", sans-serif;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 900px 480px at 50% 0%, rgba(255, 255, 255, 0.22) 0%, transparent 60%),
+    linear-gradient(180deg, var(--xp-backdrop-1) 0%, var(--xp-backdrop-2) 420px, var(--xp-backdrop-2) 100%);
+}
+
+/* ===== reusable XP chrome primitives, layered on top of the site's existing
+   Tailwind classes rather than replacing them ===== */
+@layer components {
+  .xp-shell {
+    @apply max-w-[1100px] mx-auto min-h-screen;
+    background: var(--xp-paper);
+    border-left: 1px solid var(--xp-shell-border);
+    border-right: 1px solid var(--xp-shell-border);
+    box-shadow: 0 0 0 1px rgba(10, 40, 110, 0.15), 0 20px 50px -20px rgba(0, 0, 0, 0.45);
+  }
+  .xp-titlebar {
+    @apply bg-gradient-to-b from-[var(--xp-titlebar-1)] via-[var(--xp-titlebar-2)] to-[var(--xp-titlebar-3)] border-b-[3px] border-[var(--xp-titlebar-edge)];
+  }
+  .xp-tabstrip {
+    @apply bg-cyan-50 dark:bg-gray-900 border-b-2 border-cyan-800;
+  }
+  .xp-tab {
+    @apply border border-cyan-200 dark:border-cyan-900 rounded-t-md bg-gradient-to-b from-white to-cyan-50 dark:from-gray-800 dark:to-gray-900 text-cyan-800 dark:text-cyan-200;
+  }
+  .xp-tab-active {
+    @apply bg-gradient-to-b from-cyan-400 to-cyan-600 text-white border-cyan-700;
+  }
+  .xp-panel {
+    @apply border border-cyan-200 dark:border-cyan-900 rounded-md bg-white dark:bg-gray-900 shadow-sm;
+  }
+  .xp-btn {
+    @apply border border-cyan-300 dark:border-cyan-800 rounded-sm bg-gradient-to-b from-white to-cyan-100 dark:from-gray-700 dark:to-gray-800 hover:from-cyan-50 hover:to-cyan-200 dark:hover:from-gray-600 dark:hover:to-gray-700 text-gray-800 dark:text-gray-100 font-bold shadow-sm active:shadow-inner;
+  }
+  .xp-btn-primary {
+    @apply bg-gradient-to-b from-cyan-400 to-cyan-600 hover:from-cyan-300 hover:to-cyan-500 text-white border border-cyan-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] active:shadow-inner;
+  }
+  .xp-btn-go {
+    @apply bg-gradient-to-b from-emerald-400 to-emerald-600 hover:from-emerald-300 hover:to-emerald-500 disabled:from-gray-600 disabled:to-gray-700 disabled:text-gray-400 text-white border border-emerald-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] active:shadow-inner;
+  }
 }
 
 /* Dark mode prose defaults */
@@ -25,16 +78,18 @@ body {
   color: #e2e8f0;
 }
 .dark .prose pre {
-  @apply rounded-lg border border-gray-800 bg-[#0d1117] p-4 overflow-x-auto;
+  @apply rounded-sm border border-cyan-900 bg-[#0d1117] p-4 overflow-x-auto;
+  font-family: "Courier New", monospace;
 }
 .dark .prose code {
   @apply text-cyan-400;
+  font-family: "Courier New", monospace;
 }
 .dark .prose :not(pre) > code {
-  @apply bg-gray-800/60 px-1.5 py-0.5 rounded text-sm;
+  @apply bg-gray-800/60 px-1.5 py-0.5 rounded-sm text-sm;
 }
 .dark .prose h2 {
-  @apply text-gray-100 border-b border-gray-800 pb-2 mt-8 mb-4;
+  @apply text-cyan-200 border-b border-dashed border-cyan-800 pb-2 mt-8 mb-4;
 }
 .dark .prose ul {
   @apply space-y-1;
@@ -60,16 +115,18 @@ body {
 
 /* Light mode prose defaults */
 .light .prose pre {
-  @apply rounded-lg border border-gray-200 bg-gray-50 p-4 overflow-x-auto;
+  @apply rounded-sm border border-[#b9b190] bg-[#fffef9] p-4 overflow-x-auto;
+  font-family: "Courier New", monospace;
 }
 .light .prose code {
   @apply text-cyan-700;
+  font-family: "Courier New", monospace;
 }
 .light .prose :not(pre) > code {
-  @apply bg-gray-100 px-1.5 py-0.5 rounded text-sm;
+  @apply bg-gray-100 px-1.5 py-0.5 rounded-sm text-sm;
 }
 .light .prose h2 {
-  @apply text-gray-900 border-b border-gray-200 pb-2 mt-8 mb-4;
+  @apply text-cyan-800 border-b border-dashed border-cyan-300 pb-2 mt-8 mb-4;
 }
 .light .prose h3 {
   @apply text-gray-900;

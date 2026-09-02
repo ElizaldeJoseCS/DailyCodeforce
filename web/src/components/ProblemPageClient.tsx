@@ -183,13 +183,13 @@ function CodeBlock({ children, className, ...props }: any) {
   return (
     <div ref={wrapperRef} className="relative group">
       <div className="absolute top-0 left-0 z-10 flex items-center">
-        <span className="px-2.5 py-0.5 text-xs font-mono font-medium text-cyan-400 bg-cyan-500/10 rounded-br-lg border-b border-r border-cyan-500/20">
+        <span className="px-2.5 py-0.5 text-xs font-mono font-medium text-cyan-400 bg-cyan-500/10 rounded-br-sm border-b border-r border-cyan-500/20">
           {language.toUpperCase()}
         </span>
       </div>
       <button
         onClick={handleCopy}
-        className="absolute top-2 right-2 z-10 p-1.5 rounded-md bg-gray-700/50 hover:bg-gray-600/50 text-gray-400 hover:text-gray-200 transition-colors"
+        className="absolute top-2 right-2 z-10 p-1.5 rounded-sm bg-gray-700/50 hover:bg-gray-600/50 text-gray-400 hover:text-gray-200 transition-colors"
         title="Copy code"
       >
         {copied ? (
@@ -334,14 +334,13 @@ export default function ProblemPageClient({
   return (
     <div
       ref={containerRef}
-      className="flex flex-col"
-      style={{ height: "calc(100vh - 56px)" }}
+      className="flex flex-col h-[calc(100vh-64px)] sm:h-[calc(100vh-108px)]"
     >
       {/* Top bar: back link + problem meta */}
       <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 flex-shrink-0">
         <Link
           href="/"
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-300 transition-colors"
+          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           <span className="hidden sm:inline">Back</span>
@@ -367,7 +366,7 @@ export default function ProblemPageClient({
             href={daily.problem.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-medium transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm xp-btn-primary text-white text-xs font-medium transition-colors"
           >
             <ExternalLink className="w-3.5 h-3.5" />
             Codeforces
@@ -375,7 +374,7 @@ export default function ProblemPageClient({
           {daily.problem.testCases && daily.problem.testCases.length > 0 && (
             <button
               onClick={handleCopyTestCases}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium transition-colors"
             >
               {testCasesCopied ? (
                 <Check className="w-3.5 h-3.5 text-green-400" />
@@ -389,7 +388,7 @@ export default function ProblemPageClient({
             <button
               onClick={handleVerify}
               disabled={verifying}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-green-600/20 border border-green-500/30 hover:bg-green-600/30 text-green-400 text-xs font-medium transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-green-600/20 border border-green-500/30 hover:bg-green-600/30 text-green-400 text-xs font-medium transition-colors disabled:opacity-50"
             >
               {verifying ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -401,7 +400,7 @@ export default function ProblemPageClient({
           )}
           <button
             onClick={() => setReportOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-gray-400 dark:text-gray-500 hover:text-red-400 dark:hover:text-red-400 text-xs transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-gray-400 dark:text-gray-500 hover:text-red-400 dark:hover:text-red-400 text-xs transition-colors"
             title="Report an issue"
           >
             <Flag className="w-3.5 h-3.5" />
@@ -428,13 +427,11 @@ export default function ProblemPageClient({
           style={{ width: `${leftWidth}%` }}
         >
           {/* Left panel tabs */}
-          <div className="flex border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+          <div className="flex gap-1 px-2 pt-1.5 xp-tabstrip flex-shrink-0">
             <button
               onClick={() => setLeftTab("description")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-medium transition-colors ${
-                leftTab === "description"
-                  ? "text-cyan-600 dark:text-cyan-400 border-b-2 border-cyan-500 bg-cyan-50 dark:bg-gray-800/30"
-                  : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/20"
+              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold transition-colors ${
+                leftTab === "description" ? "xp-tab-active" : "xp-tab"
               }`}
             >
               <Code className="w-3.5 h-3.5" />
@@ -442,10 +439,8 @@ export default function ProblemPageClient({
             </button>
             <button
               onClick={() => { setLeftTab("editorial"); setShowAnswer(false); }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-medium transition-colors ${
-                leftTab === "editorial"
-                  ? "text-cyan-600 dark:text-cyan-400 border-b-2 border-cyan-500 bg-cyan-50 dark:bg-gray-800/30"
-                  : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/20"
+              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold transition-colors ${
+                leftTab === "editorial" ? "xp-tab-active" : "xp-tab"
               }`}
             >
               <BookOpen className="w-3.5 h-3.5" />
@@ -461,7 +456,7 @@ export default function ProblemPageClient({
                   href={daily.problem.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 mb-4 rounded-md bg-cyan-600/10 border border-cyan-500/20 hover:bg-cyan-600/20 text-cyan-400 text-xs font-medium transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 mb-4 rounded-sm bg-cyan-600/10 border border-cyan-500/20 hover:bg-cyan-600/20 text-cyan-400 text-xs font-medium transition-colors"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   View on Codeforces
@@ -516,7 +511,7 @@ export default function ProblemPageClient({
                 )}
 
                 {daily.statement.note && (
-                  <div className="mt-6 p-4 rounded-lg bg-gray-50 dark:bg-gray-800/30 border border-gray-200 dark:border-gray-800">
+                  <div className="mt-6 p-4 rounded-sm bg-gray-50 dark:bg-gray-800/30 border border-gray-200 dark:border-gray-800">
                     <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                       Note
                     </h3>
@@ -547,7 +542,7 @@ export default function ProblemPageClient({
               <>
                 <button
                   onClick={() => setShowAnswer(!showAnswer)}
-                  className="w-full flex items-center justify-between px-4 py-3 mb-4 rounded-lg border border-gray-200 dark:border-gray-800 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  className="w-full flex items-center justify-between px-4 py-3 mb-4 rounded-sm border border-gray-200 dark:border-gray-800 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     {showAnswer ? (

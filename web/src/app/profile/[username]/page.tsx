@@ -187,7 +187,7 @@ export default function ProfilePage() {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12">
         <div className="animate-pulse space-y-6">
-          <div className="h-48 rounded-xl bg-gray-800" />
+          <div className="h-48 rounded-sm bg-gray-800" />
           <div className="h-8 w-48 rounded bg-gray-800" />
           <div className="h-4 w-32 rounded bg-gray-800" />
         </div>
@@ -247,7 +247,7 @@ export default function ProfilePage() {
 
         {/* Banner */}
         <div
-          className="rounded-xl overflow-hidden mb-6 relative"
+          className="rounded-sm overflow-hidden mb-6 relative"
           style={{ backgroundColor: bg }}
         >
           {profile.bannerUrl ? (
@@ -366,7 +366,7 @@ export default function ProfilePage() {
         {isOwner && (
           <Link
             href={`/profile/${username}/edit`}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-sm text-gray-300 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-sm bg-gray-800 hover:bg-gray-700 border border-gray-700 text-sm text-gray-300 transition-colors"
           >
             <Edit3 className="w-4 h-4" />
             Edit
@@ -409,22 +409,22 @@ export default function ProfilePage() {
       {/* Stats */}
       {layout.showStats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-4 text-center">
+          <div className="rounded-sm border border-cyan-900/50 bg-gray-900/50 p-4 text-center">
             <Trophy className="w-5 h-5 mx-auto mb-1 text-yellow-400" />
             <p className="text-2xl font-bold">#{profile.rank}</p>
             <p className="text-xs text-gray-500">Rank</p>
           </div>
-          <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-4 text-center">
+          <div className="rounded-sm border border-cyan-900/50 bg-gray-900/50 p-4 text-center">
             <Target className="w-5 h-5 mx-auto mb-1 text-cyan-400" />
             <p className="text-2xl font-bold">{profile.totalSolved}</p>
             <p className="text-xs text-gray-500">Solved</p>
           </div>
-          <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-4 text-center">
+          <div className="rounded-sm border border-cyan-900/50 bg-gray-900/50 p-4 text-center">
             <Flame className="w-5 h-5 mx-auto mb-1 text-orange-400" />
             <p className="text-2xl font-bold">{profile.currentStreak}</p>
             <p className="text-xs text-gray-500">Day Streak</p>
           </div>
-          <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-4 text-center">
+          <div className="rounded-sm border border-cyan-900/50 bg-gray-900/50 p-4 text-center">
             <Calendar className="w-5 h-5 mx-auto mb-1 text-purple-400" />
             <p className="text-2xl font-bold">{profile.longestStreak}</p>
             <p className="text-xs text-gray-500">Best Streak</p>
@@ -434,7 +434,7 @@ export default function ProfilePage() {
 
       {/* Activity Heatmap */}
       {layout.showStats && profile.progress.length > 0 && (
-        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 p-6 mb-8">
+        <div className="rounded-sm border border-cyan-200 dark:border-cyan-900/50 bg-white dark:bg-gray-900/50 p-6 mb-8">
           <h2 className="text-lg font-semibold mb-4">Activity</h2>
           <ActivityHeatmap progress={profile.progress} />
         </div>
@@ -442,7 +442,7 @@ export default function ProfilePage() {
 
       {/* Solved Problems */}
       {layout.showSolves && (
-        <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
+        <div className="rounded-sm border border-cyan-900/50 bg-gray-900/50 p-6">
           <h2 className="text-lg font-semibold mb-4">
             Recent Solves ({profile.progress.length})
           </h2>

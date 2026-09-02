@@ -116,7 +116,7 @@ export default function ProblemsPage() {
     <div className="max-w-6xl mx-auto px-4 py-12">
       <Link
         href="/"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-300 mb-8 transition-colors"
+        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mb-8 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to today
@@ -138,15 +138,15 @@ export default function ProblemsPage() {
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               placeholder="Search problems..."
-              className="pl-9 pr-4 py-2 rounded-lg bg-gray-900 dark:bg-gray-900 bg-gray-100 border border-gray-800 dark:border-gray-800 border-gray-200 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 w-64"
+              className="pl-9 pr-4 py-2 rounded-sm bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-800 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 w-64"
             />
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-sm border text-sm font-medium transition-colors ${
               showFilters || hasFilters
                 ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-400"
-                : "bg-gray-900 dark:bg-gray-900 bg-gray-100 border-gray-800 dark:border-gray-800 border-gray-200 text-gray-400 hover:text-white"
+                : "bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             }`}
           >
             <Filter className="w-4 h-4" />
@@ -156,13 +156,13 @@ export default function ProblemsPage() {
       </div>
 
       {showFilters && (
-        <div className="mb-6 p-4 rounded-xl border border-gray-800 dark:border-gray-800 border-gray-200 bg-gray-900/50 dark:bg-gray-900/50 bg-gray-50">
+        <div className="mb-6 p-4 xp-panel">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-gray-300">Filters</h3>
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Filters</h3>
             {hasFilters && (
               <button
                 onClick={clearFilters}
-                className="text-xs text-gray-500 hover:text-gray-300 flex items-center gap-1"
+                className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1"
               >
                 <X className="w-3 h-3" />
                 Clear all
@@ -178,10 +178,10 @@ export default function ProblemsPage() {
                 <button
                   key={preset.label}
                   onClick={() => handlePreset(preset)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                  className={`px-3 py-1.5 rounded-sm text-xs font-medium border transition-colors ${
                     activePreset === preset.label
                       ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-400"
-                      : "border-gray-800 dark:border-gray-800 border-gray-200 text-gray-400 hover:text-white hover:border-gray-700"
+                      : "border-gray-300 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-gray-400 dark:hover:border-gray-700"
                   }`}
                 >
                   {preset.label}
@@ -198,10 +198,10 @@ export default function ProblemsPage() {
                 <button
                   key={tag}
                   onClick={() => { setSelectedTag(selectedTag === tag ? "" : tag); setPage(1); }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                  className={`px-2.5 py-1 rounded-sm text-xs font-medium border transition-colors ${
                     selectedTag === tag
                       ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-400"
-                      : "border-gray-800 dark:border-gray-800 border-gray-200 text-gray-400 hover:text-white hover:border-gray-700"
+                      : "border-gray-300 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-gray-400 dark:hover:border-gray-700"
                   }`}
                 >
                   {tag}
@@ -216,7 +216,7 @@ export default function ProblemsPage() {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="animate-pulse rounded-xl border border-gray-800 bg-gray-900/50 p-5">
+            <div key={i} className="animate-pulse xp-panel p-5">
               <div className="h-4 w-24 rounded bg-gray-800 mb-3" />
               <div className="h-6 w-48 rounded bg-gray-800 mb-2" />
               <div className="flex gap-2">
@@ -242,7 +242,7 @@ export default function ProblemsPage() {
                 target={dp ? undefined : "_blank"}
                 rel={dp ? undefined : "noopener noreferrer"}
                 title={dp ? undefined : "Not featured as a daily problem yet — opens on Codeforces in a new tab (no in-app editorial or judge)"}
-                className={`group rounded-xl border border-gray-800 dark:border-gray-800 border-gray-200 bg-gray-900/50 dark:bg-gray-900/50 bg-white p-5 hover:border-gray-700 dark:hover:border-gray-700 hover:border-gray-300 transition-all ${!dp ? "opacity-80 hover:opacity-100" : ""}`}
+                className={`group xp-panel p-5 hover:shadow-md transition-shadow ${!dp ? "opacity-80 hover:opacity-100" : ""}`}
               >
                 <div className="flex items-center justify-between mb-2 gap-2">
                   <div className="flex items-center gap-2">
@@ -269,13 +269,13 @@ export default function ProblemsPage() {
                   {p.tags.slice(0, 3).map((tag) => (
                     <span
                       key={tag}
-                      className="text-xs px-2 py-0.5 rounded bg-gray-800/60 dark:bg-gray-800/60 bg-gray-100 text-gray-400 dark:text-gray-400 text-gray-600"
+                      className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800/60 text-gray-600 dark:text-gray-400"
                     >
                       {tag}
                     </span>
                   ))}
                   {p.tags.length > 3 && (
-                    <span className="text-xs px-2 py-0.5 rounded bg-gray-800/60 dark:bg-gray-800/60 bg-gray-100 text-gray-500">
+                    <span className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800/60 text-gray-500">
                       +{p.tags.length - 3}
                     </span>
                   )}
@@ -292,7 +292,7 @@ export default function ProblemsPage() {
           <button
             onClick={() => setPage(Math.max(1, page - 1))}
             disabled={page === 1}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-800 dark:border-gray-800 border-gray-200 text-sm text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-sm border border-gray-300 dark:border-gray-800 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
             Prev
@@ -303,7 +303,7 @@ export default function ProblemsPage() {
           <button
             onClick={() => setPage(Math.min(totalPages, page + 1))}
             disabled={page === totalPages}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-800 dark:border-gray-800 border-gray-200 text-sm text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-sm border border-gray-300 dark:border-gray-800 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             Next
             <ChevronRight className="w-4 h-4" />

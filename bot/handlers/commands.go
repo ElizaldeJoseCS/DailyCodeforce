@@ -200,7 +200,7 @@ func handleLink(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql.DB
 		Data: &discordgo.InteractionResponseData{
 			Content: fmt.Sprintf(
 				"🔗 **Link your account**\n\nGo to **%s/auth/link** and enter this code:\n\n# `%s`\n\n⏰ Code expires in 10 minutes.",
-				getEnv("SITE_URL", "http://159.65.226.241"),
+				getEnv("SITE_URL", "https://codeforces-practice.com"),
 				strings.ToUpper(code),
 			),
 		},
