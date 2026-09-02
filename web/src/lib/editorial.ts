@@ -277,7 +277,7 @@ int main() {
 \`\`\`
 
 ### Critical rules for the solution code:
-1. **Add comments to the code** - briefly explain what each key section does. Use single-line // comments for non-obvious logic, and use // --- Section Name --- block comments to separate major steps.
+1. **Comment only what's non-obvious** — a short // comment on the key insight or a tricky line is enough. Don't add a comment to every line or a // --- Section Name --- banner for every step; a straightforward loop or read doesn't need narration.
 2. **Input parsing must be exact** — read every value exactly as the problem specifies. Pay special attention to:
    - Multi-test-case format: first line is t, then t test cases
    - Whether input ends at EOF or has a fixed number of lines
@@ -292,7 +292,7 @@ int main() {
    - Single test case vs multiple test cases
 4. **Output format must match exactly** — no extra spaces, newlines, or text. Match the example output format precisely.
 5. **Do NOT use \`#define int long long\`** — it causes issues with some judge configurations. Instead, explicitly use \`long long\` where needed.
-6. **Algorithm correctness over cleverness** — write clear, correct code. A slightly longer but correct solution is better than a short but buggy one.
+6. **Use the intended, optimal approach for the given constraints** — pick the algorithm whose complexity actually fits the input bounds and time limit (check the tags and hints above), not the first brute-force idea that happens to compile. Correctness comes first, but don't pad a clean O(n log n) solution into something longer just to look thorough — concise, idiomatic competitive-programming C++ is the goal, not defensive verbosity.
 
 Keep explanations clear and educational. Assume the reader knows basic data structures but may not know the specific technique needed.`;
 

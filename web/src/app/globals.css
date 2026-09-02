@@ -20,18 +20,12 @@ body {
 }
 
 /* Dark mode prose defaults */
-.dark .prose pre,
-.dark .prose code {
-  color: #e2e8f0;
-}
 .dark .prose pre {
+  color: #e2e8f0;
   @apply rounded-lg border border-gray-800 bg-[#0d1117] p-4 overflow-x-auto;
 }
-.dark .prose code {
-  @apply text-cyan-400;
-}
 .dark .prose :not(pre) > code {
-  @apply bg-gray-800/60 px-1.5 py-0.5 rounded text-sm;
+  @apply text-cyan-400 bg-gray-800/60 px-1.5 py-0.5 rounded text-sm;
 }
 .dark .prose h2 {
   @apply text-gray-100 border-b border-gray-800 pb-2 mt-8 mb-4;
@@ -62,11 +56,8 @@ body {
 .light .prose pre {
   @apply rounded-lg border border-gray-200 bg-gray-50 p-4 overflow-x-auto;
 }
-.light .prose code {
-  @apply text-cyan-700;
-}
 .light .prose :not(pre) > code {
-  @apply bg-gray-100 px-1.5 py-0.5 rounded text-sm;
+  @apply text-cyan-700 bg-gray-100 px-1.5 py-0.5 rounded text-sm;
 }
 .light .prose h2 {
   @apply text-gray-900 border-b border-gray-200 pb-2 mt-8 mb-4;
