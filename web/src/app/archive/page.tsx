@@ -36,14 +36,14 @@ export default async function ArchivePage() {
         Back to today
       </Link>
 
-      <h1 className="text-3xl font-bold mb-8">
-        Problem <span className="text-cyan-400">Archive</span>
+      <h1 className="text-3xl font-bold mb-8 [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] dark:[text-shadow:1px_1px_0_rgba(0,0,0,0.5)]">
+        Problem <span className="text-cyan-500 dark:text-cyan-400">Archive</span>
       </h1>
 
       <div className="space-y-8">
         {Object.entries(grouped).map(([date, problems]) => (
           <div key={date}>
-            <h2 className="text-sm font-mono text-gray-500 mb-3">{date}</h2>
+            <h2 className="text-sm font-mono text-gray-500 mb-3 pb-1 border-b border-dashed border-cyan-200 dark:border-cyan-900">{date}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {TIER_ORDER.map((tier) => {
                 const dp = problems.find((p) => p.tier === tier);
@@ -53,7 +53,7 @@ export default async function ArchivePage() {
                   return (
                     <div
                       key={tier}
-                      className="rounded-lg border border-gray-200/50 dark:border-gray-800/50 bg-gray-50 dark:bg-gray-900/30 p-4 opacity-30"
+                      className="rounded-sm border border-cyan-200/40 dark:border-cyan-900/40 bg-gray-50 dark:bg-gray-900/30 p-4 opacity-30"
                     >
                       <span
                         className={`text-xs px-2 py-0.5 rounded-full border ${tierColor(tier)}`}
@@ -71,7 +71,7 @@ export default async function ArchivePage() {
                   <Link
                     key={tier}
                     href={`/problem/${dp.id}`}
-                    className="group rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 p-4 hover:border-gray-300 dark:hover:border-gray-700 transition-all"
+                    className="group xp-panel p-4 hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span

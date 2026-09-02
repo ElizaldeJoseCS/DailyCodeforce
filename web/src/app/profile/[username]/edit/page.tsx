@@ -99,7 +99,7 @@ export default function EditProfilePage() {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="animate-pulse space-y-6">
-          <div className="h-48 rounded-xl bg-gray-800" />
+          <div className="h-48 rounded-sm bg-gray-800" />
           <div className="h-8 w-48 rounded bg-gray-800" />
         </div>
       </div>
@@ -110,7 +110,7 @@ export default function EditProfilePage() {
     <div className="max-w-2xl mx-auto px-4 py-12">
       <Link
         href={`/profile/${username}`}
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-300 mb-8 transition-colors"
+        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mb-8 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to profile

@@ -89,6 +89,12 @@ async function generateEditorials() {
         testCases
       );
 
+      if (editorial === null) {
+        console.log(`❌ ${p.name} (failed structural checks or known-answer validation after all retries — leaving unset, will retry on a future run)`);
+        await new Promise((r) => setTimeout(r, 2000));
+        continue;
+      }
+
       await prisma.dailyProblem.update({
         where: { id: dp.id },
         data: { editorial },
@@ -96,8 +102,6 @@ async function generateEditorials() {
 
       if (validated) {
         console.log(`✅ ${p.name} (validated against ${testCases?.length ?? 0}+ test cases)`);
-      } else if (testCases && testCases.length > 0) {
-        console.log(`⚠️  ${p.name} (FAILED validation after retries — saved anyway, needs review)`);
       } else {
         console.log(`➖ ${p.name} (no test cases available, unvalidated)`);
       }

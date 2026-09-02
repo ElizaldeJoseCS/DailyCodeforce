@@ -31,14 +31,14 @@ export default async function LeaderboardPage() {
     <div className="max-w-4xl mx-auto px-4 py-12">
       <Link
         href="/"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-300 mb-8 transition-colors"
+        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mb-8 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to today
       </Link>
 
-      <h1 className="text-3xl font-bold mb-8">
-        <span className="text-cyan-400">Leaderboard</span>
+      <h1 className="text-3xl font-bold mb-8 [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] dark:[text-shadow:1px_1px_0_rgba(0,0,0,0.5)]">
+        <span className="text-cyan-500 dark:text-cyan-400">Leaderboard</span>
       </h1>
 
       {leaderboard.length === 0 ? (
@@ -49,21 +49,21 @@ export default async function LeaderboardPage() {
           </p>
         </div>
       ) : (
-        <div className="rounded-xl border border-gray-800 bg-gray-900/50 overflow-hidden">
+        <div className="xp-panel overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-800 text-sm text-gray-500">
-                <th className="text-left px-6 py-3 font-medium">Rank</th>
-                <th className="text-left px-6 py-3 font-medium">User</th>
-                <th className="text-center px-6 py-3 font-medium">Streak</th>
-                <th className="text-right px-6 py-3 font-medium">Solved</th>
+              <tr className="bg-gradient-to-b from-cyan-500 to-cyan-700 border-b border-cyan-800 text-sm text-white">
+                <th className="text-left px-6 py-3 font-bold">Rank</th>
+                <th className="text-left px-6 py-3 font-bold">User</th>
+                <th className="text-center px-6 py-3 font-bold">Streak</th>
+                <th className="text-right px-6 py-3 font-bold">Solved</th>
               </tr>
             </thead>
             <tbody>
               {leaderboard.map((entry) => (
                 <tr
                   key={entry.id}
-                  className="border-b border-gray-800/50 last:border-0 hover:bg-gray-800/30 transition-colors"
+                  className="border-b border-cyan-100 dark:border-cyan-900/50 last:border-0 odd:bg-cyan-50/40 dark:odd:bg-gray-800/30 hover:bg-cyan-100/60 dark:hover:bg-gray-800/60 transition-colors"
                 >
                   <td className="px-6 py-4 font-mono text-sm">
                     {entry.rank <= 3 ? (

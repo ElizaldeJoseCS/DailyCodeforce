@@ -15,7 +15,7 @@ func handleDaily(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql.D
 	}
 
 	query := `
-		SELECT dp.tier, p.name, p.rating, p.url, p.tags
+		SELECT dp.id, dp.tier, p.name, p.rating, p.url, p.tags
 		FROM daily_problems dp
 		JOIN problems p ON p.id = dp."problemId"
 		WHERE dp.date = CURRENT_DATE
@@ -42,14 +42,14 @@ func handleDaily(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql.D
 	defer rows.Close()
 
 	type dailyProblem struct {
-		tier, name, url, tags string
-		rating                int
+		id, tier, name, url, tags string
+		rating                    int
 	}
 
 	var problems []dailyProblem
 	for rows.Next() {
 		var p dailyProblem
-		if err := rows.Scan(&p.tier, &p.name, &p.rating, &p.url, &p.tags); err != nil {
+		if err := rows.Scan(&p.id, &p.tier, &p.name, &p.rating, &p.url, &p.tags); err != nil {
 			continue
 		}
 		problems = append(problems, p)
@@ -69,13 +69,14 @@ func handleDaily(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql.D
 	for _, p := range problems {
 		emoji := tierEmojiMap()[p.tier]
 		color := tierColorInt(p.tier)
+		siteURL := fmt.Sprintf("%s/problem/%s", getEnv("SITE_URL", "https://codeforces-practice.com"), p.id)
 
 		desc := fmt.Sprintf("%s %s\n\n**Tags:** %s",
 			emoji, p.name, CleanPgtags(p.tags))
 
 		embeds = append(embeds, &discordgo.MessageEmbed{
 			Title:       fmt.Sprintf("%s — %s (Rating: %d)", p.tier[0:1]+p.tier[1:], p.name, p.rating),
-			URL:         p.url,
+			URL:         siteURL,
 			Description: desc,
 			Color:       color,
 		})
@@ -98,10 +99,10 @@ func SendDailyNotification(s *discordgo.Session, db *sql.DB, channelID string) e
 	}
 
 	rows, err := db.Query(`
-		SELECT dp.tier, p.name, p.rating, p.url, p.tags, p."cfContestId", p."cfIndex"
+		SELECT dp.id, dp.tier, p.name, p.rating, p.url, p.tags, p."cfContestId", p."cfIndex"
 		FROM daily_problems dp
 		JOIN problems p ON p.id = dp."problemId"
-		WHERE dp.date = CURRENT_DATE
+		WHERE dp.date = CURRENT_DATE AND dp."discordPostedAt" IS NULL
 		ORDER BY CASE dp.tier WHEN 'beginner' THEN 1 WHEN 'intermediate' THEN 2 WHEN 'advanced' THEN 3 WHEN 'expert' THEN 4 END
 	`)
 	if err != nil {
@@ -110,14 +111,14 @@ func SendDailyNotification(s *discordgo.Session, db *sql.DB, channelID string) e
 	defer rows.Close()
 
 	type dbProblem struct {
-		tier, name, url, tags, index string
-		rating, contestID            int
+		id, tier, name, url, tags, index string
+		rating, contestID                int
 	}
 
 	var problems []dbProblem
 	for rows.Next() {
 		var p dbProblem
-		if err := rows.Scan(&p.tier, &p.name, &p.rating, &p.url, &p.tags, &p.contestID, &p.index); err != nil {
+		if err := rows.Scan(&p.id, &p.tier, &p.name, &p.rating, &p.url, &p.tags, &p.contestID, &p.index); err != nil {
 			log.Printf("Error scanning row: %v", err)
 			continue
 		}
@@ -128,13 +129,16 @@ func SendDailyNotification(s *discordgo.Session, db *sql.DB, channelID string) e
 		return nil
 	}
 
+	siteBase := getEnv("SITE_URL", "https://codeforces-practice.com")
+
 	for _, p := range problems {
 		emoji := tierEmoji[p.tier]
 		color := tierColorInt(p.tier)
+		siteURL := fmt.Sprintf("%s/problem/%s", siteBase, p.id)
 
 		ps, scrapeErr := ScrapeProblem(p.contestID, p.index)
 
-		embed := buildProblemEmbed(p.name, p.rating, p.url, p.tags, emoji, color, ps, scrapeErr)
+		embed := buildProblemEmbed(p.name, p.rating, siteURL, p.url, p.tags, emoji, color, ps, scrapeErr)
 
 		_, err = s.ForumThreadStartEmbeds(channelID,
 			fmt.Sprintf("%s %s — %s (Rating: %d)", emoji, p.tier[0:1]+p.tier[1:], p.name, p.rating),
@@ -143,19 +147,28 @@ func SendDailyNotification(s *discordgo.Session, db *sql.DB, channelID string) e
 			log.Printf("Failed to create forum thread for %s: %v", p.name, err)
 			return err
 		}
+
+		if _, err := db.Exec(`UPDATE daily_problems SET "discordPostedAt" = NOW() WHERE id = $1`, p.id); err != nil {
+			log.Printf("Failed to mark %s as posted: %v", p.name, err)
+		}
 	}
 
 	return nil
 }
 
-func buildProblemEmbed(name string, rating int, url, tags, emoji string, color int, ps *ProblemStatement, scrapeErr error) *discordgo.MessageEmbed {
+func buildProblemEmbed(name string, rating int, siteURL, cfURL, tags, emoji string, color int, ps *ProblemStatement, scrapeErr error) *discordgo.MessageEmbed {
+	linkURL := siteURL
+	if linkURL == "" {
+		linkURL = cfURL
+	}
+
 	desc := fmt.Sprintf("%s **%s** (Rating: %d)\n\n**Tags:** %s", emoji, name, rating, CleanPgtags(tags))
 
 	if scrapeErr != nil {
-		desc += "\n\n*Full statement couldn't be fetched.*\n[View on Codeforces](" + url + ")"
+		desc += fmt.Sprintf("\n\n*Full statement couldn't be fetched.*\n[Open on DailyCodeforce](%s)", linkURL)
 		return &discordgo.MessageEmbed{
 			Title:       name,
-			URL:         url,
+			URL:         linkURL,
 			Description: desc,
 			Color:       color,
 		}
@@ -177,7 +190,7 @@ func buildProblemEmbed(name string, rating int, url, tags, emoji string, color i
 
 	embed := &discordgo.MessageEmbed{
 		Title:       name,
-		URL:         url,
+		URL:         linkURL,
 		Description: desc,
 		Color:       color,
 	}
@@ -203,7 +216,7 @@ func buildProblemEmbed(name string, rating int, url, tags, emoji string, color i
 		if idx >= 2 {
 			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
 				Name:  fmt.Sprintf("📎 +%d more examples", len(ps.Examples)-2),
-				Value: fmt.Sprintf("[View all on Codeforces →](%s)", url),
+				Value: fmt.Sprintf("[View all on DailyCodeforce →](%s)", linkURL),
 			})
 			break
 		}
@@ -228,9 +241,13 @@ func buildProblemEmbed(name string, rating int, url, tags, emoji string, color i
 		})
 	}
 
+	openValue := fmt.Sprintf("[Solve on DailyCodeforce →](%s)", linkURL)
+	if siteURL != "" && cfURL != "" {
+		openValue += fmt.Sprintf("\n[View original on Codeforces →](%s)", cfURL)
+	}
 	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
 		Name:  "Open Problem",
-		Value: fmt.Sprintf("[Codeforces →](%s)", url),
+		Value: openValue,
 	})
 
 	return embed

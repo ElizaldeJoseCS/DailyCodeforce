@@ -33,8 +33,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
-          <Navbar />
-          <main className="min-h-screen">{children}</main>
+          <div className="xp-shell">
+            <Navbar />
+            <main>{children}</main>
+          </div>
           <LiveCount />
           <ReportButton />
         </Providers>

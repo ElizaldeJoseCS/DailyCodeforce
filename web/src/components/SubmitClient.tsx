@@ -32,7 +32,7 @@ const VERDICT_COLORS: Record<string, string> = {
 function CompileError({ output }: { output: string }) {
   const lines = output.split('\n');
   return (
-    <div className="m-3 p-3 bg-purple-900/20 border border-purple-800/50 rounded-lg">
+    <div className="m-3 p-3 bg-purple-900/20 border border-purple-800/50 rounded-sm">
       <div className="text-xs font-medium text-purple-400 mb-2">Compilation Error</div>
       <pre className="text-xs whitespace-pre-wrap font-mono leading-relaxed">
         {lines.map((line, i) => {
@@ -153,7 +153,7 @@ export default function SubmitClient({
           data-submit-btn
           onClick={handleSubmit}
           disabled={submitting || !code.trim()}
-          className="px-5 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-md text-sm font-medium transition-colors"
+          className="px-5 py-1.5 xp-btn-go rounded-sm text-sm font-medium transition-colors"
         >
           {submitting ? (
             <span className="flex items-center gap-1.5">
@@ -178,15 +178,15 @@ export default function SubmitClient({
         {hasDetails && (
           <button
             onClick={() => setShowDetails((s) => !s)}
-            className="ml-auto text-xs text-gray-400 hover:text-gray-200 underline underline-offset-2"
+            className="ml-auto text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 underline underline-offset-2"
           >
             {showDetails ? 'Hide details' : 'Show details'}
           </button>
         )}
         {hasDetails && showDetails && (
-          <div className="absolute bottom-full left-0 right-0 mb-2 max-h-96 overflow-y-auto bg-gray-900 border border-gray-700 rounded-lg shadow-2xl z-20">
+          <div className="absolute bottom-full left-0 right-0 mb-2 max-h-96 overflow-y-auto bg-gray-900 border border-gray-700 rounded-sm shadow-2xl z-20">
             {result?.error && (
-              <div className="m-3 p-3 bg-red-900/30 border border-red-800 rounded-lg text-red-300 text-sm">
+              <div className="m-3 p-3 bg-red-900/30 border border-red-800 rounded-sm text-red-300 text-sm">
                 {result.error}
               </div>
             )}
@@ -216,7 +216,7 @@ export default function SubmitClient({
         <button
           onClick={handleSubmit}
           disabled={submitting || !code.trim()}
-          className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg text-sm font-medium transition-colors"
+          className="px-5 py-2 xp-btn-go rounded-sm text-sm font-medium transition-colors"
         >
           {submitting ? (
             <span className="flex items-center gap-1.5">
@@ -238,7 +238,7 @@ export default function SubmitClient({
       </div>
 
       {result?.error && (
-        <div className="m-3 p-3 bg-red-900/30 border border-red-800 rounded-lg text-red-300 text-sm">
+        <div className="m-3 p-3 bg-red-900/30 border border-red-800 rounded-sm text-red-300 text-sm">
           {result.error}
         </div>
       )}

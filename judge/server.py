@@ -168,13 +168,13 @@ class JudgeHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if self.path == "/judge":
-            self._handle_judge()
+            self._handle_judge(internal=False)
         elif self.path == "/judge/internal":
-            self._handle_judge()
+            self._handle_judge(internal=True)
         else:
             self._respond(404, {"error": "Not found"})
 
-    def _handle_judge(self):
+    def _handle_judge(self, internal=False):
         try:
             length = int(self.headers.get("Content-Length", 0))
             if length > 2 * 1024 * 1024:
@@ -195,9 +195,15 @@ class JudgeHandler(BaseHTTPRequestHandler):
                 self._respond(400, {"error": "Source code too large (max 50KB)"})
                 return
 
-            if not test_cases or not isinstance(test_cases, list):
+            if not isinstance(test_cases, list):
                 self._respond(400, {"error": "testCases required"})
                 return
+            if not test_cases and not internal:
+                self._respond(400, {"error": "testCases required"})
+                return
+            # Internal callers (editorial validation) may pass an empty list
+            # to get a compile-only check when there's no ground-truth data
+            # to test behavior against.
 
             if len(test_cases) > MAX_TESTS:
                 test_cases = test_cases[:MAX_TESTS]

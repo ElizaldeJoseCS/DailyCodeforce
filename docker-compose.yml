@@ -70,6 +70,7 @@ services:
       DB_NAME: dailycodeforce
       GUILD_ID: ${GUILD_ID}
       NOTIFICATION_CHANNEL_ID: ${NOTIFICATION_CHANNEL_ID}
+      SITE_URL: ${SITE_URL:-https://codeforces-practice.com}
     ports:
       - "127.0.0.1:9090:9090"
     depends_on:

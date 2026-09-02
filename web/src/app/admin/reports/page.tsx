@@ -76,7 +76,7 @@ export default function AdminReportsPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
-      <Link href="/" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-300 mb-8 transition-colors">
+      <Link href="/" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mb-8 transition-colors">
         <ArrowLeft className="w-4 h-4" />
         Back to home
       </Link>
@@ -88,7 +88,7 @@ export default function AdminReportsPage() {
       </div>
 
       {error && (
-        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm mb-6">{error}</div>
+        <div className="p-4 rounded-sm bg-red-500/10 border border-red-500/20 text-red-400 text-sm mb-6">{error}</div>
       )}
 
       {reports.length === 0 ? (
@@ -101,7 +101,7 @@ export default function AdminReportsPage() {
           {reports.map((r) => (
             <div
               key={r.id}
-              className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50"
+              className="p-4 rounded-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
@@ -134,9 +134,9 @@ export default function AdminReportsPage() {
                   )}
 
                   {r.message && (
-                    <div className="flex items-start gap-2 mt-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-start gap-2 mt-2 p-3 rounded-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
                       <MessageSquare className="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0" />
-                      <p className="text-sm text-gray-300">{r.message}</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">{r.message}</p>
                     </div>
                   )}
 
@@ -149,7 +149,7 @@ export default function AdminReportsPage() {
 
                 <button
                   onClick={() => handleDelete(r.id)}
-                  className="p-2 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors shrink-0"
+                  className="p-2 rounded-sm hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors shrink-0"
                   title="Delete report"
                 >
                   <Trash2 className="w-4 h-4" />

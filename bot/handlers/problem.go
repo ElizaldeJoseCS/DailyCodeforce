@@ -79,8 +79,19 @@ func handleProblem(s *discordgo.Session, i *discordgo.InteractionCreate, db *sql
 		}
 	}
 
+	var siteURL string
+	var dpID string
+	if err := db.QueryRow(`
+		SELECT dp.id FROM daily_problems dp
+		JOIN problems p ON p.id = dp."problemId"
+		WHERE p."cfContestId" = $1 AND p."cfIndex" = $2
+		ORDER BY dp.date DESC LIMIT 1
+	`, contestID, index).Scan(&dpID); err == nil && dpID != "" {
+		siteURL = fmt.Sprintf("%s/problem/%s", getEnv("SITE_URL", "https://codeforces-practice.com"), dpID)
+	}
+
 	emoji := ""
-	embed := buildProblemEmbed(name, rating, url, tags, emoji, ratingColor, ps, nil)
+	embed := buildProblemEmbed(name, rating, siteURL, url, tags, emoji, ratingColor, ps, nil)
 	editInteractionEmbed(s, i, embed)
 }
 

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ExternalLink, ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { TIERS, TIER_ORDER, type Tier } from "@/lib/tiers";
-import { tierColor, ratingColor } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +42,13 @@ async function getTodayProblems(): Promise<DailyEntry[]> {
   });
 }
 
+const TIER_HEADER: Record<string, string> = {
+  beginner: "from-emerald-500 to-emerald-700 border-emerald-800",
+  intermediate: "from-blue-500 to-blue-700 border-blue-800",
+  advanced: "from-orange-500 to-orange-700 border-orange-800",
+  expert: "from-red-500 to-red-700 border-red-800",
+};
+
 export default async function HomePage() {
   const problems = await getTodayProblems();
   const today = new Date().toISOString().split("T")[0];
@@ -50,8 +56,8 @@ export default async function HomePage() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-12">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold tracking-tight mb-3">
-          Daily <span className="text-cyan-400">Codeforces</span> Problems
+        <h1 className="text-4xl font-bold tracking-tight mb-3 [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] dark:[text-shadow:1px_1px_0_rgba(0,0,0,0.5)]">
+          Daily <span className="text-cyan-500 dark:text-cyan-400">Codeforces</span> Problems
         </h1>
         <p className="text-gray-500 dark:text-gray-400 text-lg">
           Practice competitive programming with curated daily challenges across
@@ -65,17 +71,18 @@ export default async function HomePage() {
           const config = TIERS[entry.tier];
           const problem = "problem" in entry ? entry.problem : null;
           const id = "id" in entry ? entry.id : null;
+          const headerGradient = TIER_HEADER[entry.tier] || "from-gray-500 to-gray-700 border-gray-800";
 
           if (!problem || !id) {
             return (
               <div
                 key={entry.tier}
-                className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 p-6 opacity-50"
+                className="rounded-sm border border-cyan-200 dark:border-cyan-900 bg-white dark:bg-gray-900 shadow-sm overflow-hidden opacity-60"
               >
-                <div className="text-sm text-gray-400 dark:text-gray-500 mb-2">
+                <div className={`bg-gradient-to-b ${headerGradient} border-b px-4 py-2 text-white text-sm font-bold`}>
                   {config.label} ({config.min}–{config.max})
                 </div>
-                <p className="text-gray-400 dark:text-gray-600">No problem assigned today</p>
+                <p className="p-6 text-gray-400 dark:text-gray-600">No problem assigned today</p>
               </div>
             );
           }
@@ -84,52 +91,52 @@ export default async function HomePage() {
             <Link
               key={entry.tier}
               href={`/problem/${id}`}
-              className="group rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 p-6 hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
+              className="group rounded-sm border border-cyan-200 dark:border-cyan-900 bg-white dark:bg-gray-900 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
             >
-              <div className="flex items-center justify-between mb-3">
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${tierColor(entry.tier)}`}
-                >
+              <div className={`flex items-center justify-between bg-gradient-to-b ${headerGradient} border-b px-4 py-2`}>
+                <span className="text-white text-sm font-bold tracking-wide">
                   {config.label}
                 </span>
                 <span
-                  className={`text-sm font-mono font-bold ${ratingColor(problem.rating)}`}
+                  className={`text-sm font-mono font-bold px-2 py-0.5 rounded-sm bg-black/20 text-white`}
                 >
                   {problem.rating}
                 </span>
               </div>
 
-              <h2 className="text-lg font-semibold mb-2 group-hover:text-cyan-400 transition-colors">
-                {problem.name}
-              </h2>
+              <div className="p-6">
+                <h2 className="text-lg font-semibold mb-2 group-hover:text-cyan-500 dark:group-hover:text-cyan-400 transition-colors">
+                  {problem.name}
+                </h2>
 
-              <div className="flex flex-wrap gap-1.5 mb-4">
-                {problem.tags.slice(0, 4).map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {problem.tags.slice(0, 4).map((tag) => (
+                    <span
+                      key={tag}
+                      className="text-xs px-2 py-0.5 rounded-sm bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                  {problem.tags.length > 4 && (
+                    <span className="text-xs px-2 py-0.5 rounded-sm bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500">
+                      +{problem.tags.length - 4}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <a
+                    href={problem.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors"
                   >
-                    {tag}
-                  </span>
-                ))}
-                {problem.tags.length > 4 && (
-                  <span className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500">
-                    +{problem.tags.length - 4}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between">
-                <a
-                  href={problem.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-cyan-400 transition-colors"
-                >
-                  <ExternalLink className="w-3 h-3" />
-                  Codeforces
-                </a>
-                <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-cyan-400 transition-colors" />
+                    <ExternalLink className="w-3 h-3" />
+                    Codeforces
+                  </a>
+                  <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-cyan-500 dark:group-hover:text-cyan-400 transition-colors" />
+                </div>
               </div>
             </Link>
           );

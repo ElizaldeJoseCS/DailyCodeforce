@@ -48,30 +48,33 @@ export default function SignUpPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 font-bold text-2xl mb-4">
-            <Code2 className="w-8 h-8 text-cyan-400" />
+        <div className="text-center mb-6">
+          <Link href="/" className="inline-flex items-center gap-2 font-bold text-2xl">
+            <Code2 className="w-7 h-7 text-cyan-500 dark:text-cyan-400" />
             <span>DailyCodeforce</span>
           </Link>
-          <h1 className="text-2xl font-bold">Create account</h1>
-          <p className="text-gray-400 mt-2">Track your Codeforces journey with daily practice</p>
         </div>
 
-        <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-8">
+        <div className="xp-panel overflow-hidden">
+          <div className="xp-titlebar px-4 py-2.5 text-white text-sm font-bold">
+            Create account
+          </div>
+          <div className="p-8">
+          <p className="text-gray-500 dark:text-gray-400 text-sm text-center mb-6">Track your Codeforces journey with daily practice</p>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              <div className="p-3 rounded-sm bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                 {error}
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Codeforces Handle</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Codeforces Handle</label>
               <input
                 type="text"
                 value={form.cfHandle}
                 onChange={(e) => setForm({ ...form, cfHandle: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 focus:outline-none focus:border-cyan-500 transition-colors"
+                className="w-full px-4 py-2.5 rounded-sm bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-cyan-500 transition-colors"
                 required
                 placeholder="e.g. tourist"
               />
@@ -89,12 +92,12 @@ export default function SignUpPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Username</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
               <input
                 type="text"
                 value={form.username}
                 onChange={(e) => setForm({ ...form, username: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 focus:outline-none focus:border-cyan-500 transition-colors"
+                className="w-full px-4 py-2.5 rounded-sm bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-cyan-500 transition-colors"
                 required
                 minLength={3}
                 maxLength={20}
@@ -104,31 +107,31 @@ export default function SignUpPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
               <input
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 focus:outline-none focus:border-cyan-500 transition-colors"
+                className="w-full px-4 py-2.5 rounded-sm bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-cyan-500 transition-colors"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Password</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 focus:outline-none focus:border-cyan-500 transition-colors pr-10"
+                  className="w-full px-4 py-2.5 rounded-sm bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-cyan-500 transition-colors pr-10"
                   required
                   minLength={8}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -136,12 +139,12 @@ export default function SignUpPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Confirm Password</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm Password</label>
               <input
                 type="password"
                 value={form.confirm}
                 onChange={(e) => setForm({ ...form, confirm: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 focus:outline-none focus:border-cyan-500 transition-colors"
+                className="w-full px-4 py-2.5 rounded-sm bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-cyan-500 transition-colors"
                 required
                 minLength={8}
               />
@@ -150,7 +153,7 @@ export default function SignUpPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+              className="w-full py-2.5 rounded-sm xp-btn-primary disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
             >
               {loading ? "Creating account..." : "Create account"}
             </button>
@@ -162,6 +165,7 @@ export default function SignUpPage() {
               Sign in
             </Link>
           </p>
+          </div>
         </div>
       </div>
     </div>

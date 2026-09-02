@@ -63,23 +63,23 @@ function CommentItem({
   };
 
   return (
-    <div className={depth > 0 ? "ml-6 pl-4 border-l border-gray-800" : ""}>
+    <div className={depth > 0 ? "ml-6 pl-4 border-l border-gray-200 dark:border-gray-800" : ""}>
       <div className="py-3">
         <div className="flex items-center gap-2 mb-1.5">
           {avatar ? (
             <img src={avatar} alt="" className="w-6 h-6 rounded-full" />
           ) : (
-            <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center text-[10px] font-bold text-gray-300">
+            <div className="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-[10px] font-bold text-gray-700 dark:text-gray-300">
               {(user.displayName || user.username)[0].toUpperCase()}
             </div>
           )}
-          <span className="text-sm font-medium text-gray-200">
+          <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
             {user.displayName || user.username}
           </span>
           <span className="text-xs text-gray-500">{timeAgo(comment.createdAt)}</span>
         </div>
 
-        <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed ml-8">
+        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed ml-8">
           {comment.content}
         </p>
 
@@ -98,7 +98,7 @@ function CommentItem({
           {session && depth === 0 && (
             <button
               onClick={() => setShowReplyBox(!showReplyBox)}
-              className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+              className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
             >
               <Reply className="w-3.5 h-3.5" />
               Reply
@@ -114,12 +114,12 @@ function CommentItem({
               onKeyDown={(e) => e.key === "Enter" && handleReply()}
               placeholder="Write a reply..."
               autoFocus
-              className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50"
+              className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-sm text-sm text-gray-900 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50"
             />
             <button
               onClick={handleReply}
               disabled={submitting || !replyText.trim()}
-              className="px-3 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 text-white rounded-lg text-sm transition-colors"
+              className="px-3 py-2 xp-btn-primary disabled:bg-gray-700 text-white rounded-sm text-sm transition-colors"
             >
               {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </button>
@@ -238,19 +238,19 @@ export default function Discussion({ dailyProblemId }: { dailyProblemId: string 
             onChange={(e) => setNewComment(e.target.value)}
             rows={3}
             placeholder="Share your thoughts, approach, or ask a question..."
-            className="flex-1 px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 resize-none"
+            className="flex-1 px-3 py-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-sm text-sm text-gray-900 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 resize-none"
           />
           <button
             onClick={handlePost}
             disabled={submitting || !newComment.trim()}
-            className="self-end px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition-colors"
+            className="self-end px-4 py-2.5 xp-btn-primary disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-sm transition-colors"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </button>
         </div>
       ) : (
-        <div className="mb-6 p-4 rounded-lg bg-gray-800/50 border border-gray-700 text-sm text-gray-400 text-center">
-          <a href="/auth/signin" className="text-cyan-400 hover:text-cyan-300 underline">Sign in</a> to join the discussion.
+        <div className="mb-6 p-4 rounded-sm bg-gray-100 dark:bg-gray-800/50 border border-gray-300 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400 text-center">
+          <a href="/auth/signin" className="text-cyan-500 dark:text-cyan-400 hover:text-cyan-600 dark:hover:text-cyan-300 underline">Sign in</a> to join the discussion.
         </div>
       )}
 
@@ -264,7 +264,7 @@ export default function Discussion({ dailyProblemId }: { dailyProblemId: string 
           <p className="text-sm">No comments yet. Be the first to share your approach!</p>
         </div>
       ) : (
-        <div className="divide-y divide-gray-800">
+        <div className="divide-y divide-gray-200 dark:divide-gray-800">
           {comments.map((c) => (
             <CommentItem key={c.id} comment={c} onVote={handleVote} onReply={handleReply} depth={0} />
           ))}

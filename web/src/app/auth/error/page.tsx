@@ -12,7 +12,7 @@ export default function AuthErrorPage() {
         <p className="text-gray-400 mb-6">Something went wrong during authentication.</p>
         <Link
           href="/auth/signin"
-          className="px-6 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 font-medium transition-colors"
+          className="px-6 py-2.5 rounded-sm xp-btn-primary font-medium transition-colors"
         >
           Try again
         </Link>
