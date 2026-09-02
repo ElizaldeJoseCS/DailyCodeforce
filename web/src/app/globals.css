@@ -73,20 +73,14 @@ body {
 }
 
 /* Dark mode prose defaults */
-.dark .prose pre,
-.dark .prose code {
-  color: #e2e8f0;
-}
 .dark .prose pre {
+  color: #e2e8f0;
   @apply rounded-sm border border-cyan-900 bg-[#0d1117] p-4 overflow-x-auto;
   font-family: "Courier New", monospace;
 }
-.dark .prose code {
-  @apply text-cyan-400;
-  font-family: "Courier New", monospace;
-}
 .dark .prose :not(pre) > code {
-  @apply bg-gray-800/60 px-1.5 py-0.5 rounded-sm text-sm;
+  @apply text-cyan-400 bg-gray-800/60 px-1.5 py-0.5 rounded-sm text-sm;
+  font-family: "Courier New", monospace;
 }
 .dark .prose h2 {
   @apply text-cyan-200 border-b border-dashed border-cyan-800 pb-2 mt-8 mb-4;
@@ -118,12 +112,9 @@ body {
   @apply rounded-sm border border-[#b9b190] bg-[#fffef9] p-4 overflow-x-auto;
   font-family: "Courier New", monospace;
 }
-.light .prose code {
-  @apply text-cyan-700;
-  font-family: "Courier New", monospace;
-}
 .light .prose :not(pre) > code {
-  @apply bg-gray-100 px-1.5 py-0.5 rounded-sm text-sm;
+  @apply text-cyan-700 bg-gray-100 px-1.5 py-0.5 rounded-sm text-sm;
+  font-family: "Courier New", monospace;
 }
 .light .prose h2 {
   @apply text-cyan-800 border-b border-dashed border-cyan-300 pb-2 mt-8 mb-4;
