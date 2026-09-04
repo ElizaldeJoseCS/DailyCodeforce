@@ -1,8 +1,21 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import DiscordProvider from "next-auth/providers/discord";
+import GithubProvider from "next-auth/providers/github";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
+
+const OAUTH_ID_FIELD = {
+  discord: "discordId",
+  github: "githubId",
+} as const;
+
+const OAUTH_AVATAR_FIELD = {
+  discord: "discordAvatar",
+  github: "githubAvatar",
+} as const;
+
+type OAuthProvider = keyof typeof OAUTH_ID_FIELD;
 
 interface SessionUser {
   id: string;
@@ -49,6 +62,10 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.DISCORD_CLIENT_ID!,
       clientSecret: process.env.DISCORD_CLIENT_SECRET!,
     }),
+    GithubProvider({
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+    }),
   ],
   callbacks: {
     async jwt({ token, user }) {
@@ -61,14 +78,14 @@ export const authOptions: NextAuthOptions = {
       if (session.user && token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { username: true, displayName: true, avatarUrl: true, discordAvatar: true, cfHandle: true, role: true },
+          select: { username: true, displayName: true, avatarUrl: true, discordAvatar: true, githubAvatar: true, cfHandle: true, role: true },
         });
         if (dbUser) {
           const u = session.user as SessionUser;
           u.id = token.id as string;
           u.username = dbUser.username;
           u.displayName = dbUser.displayName ?? undefined;
-          u.image = dbUser.avatarUrl || dbUser.discordAvatar || undefined;
+          u.image = dbUser.avatarUrl || dbUser.discordAvatar || dbUser.githubAvatar || undefined;
           u.cfHandle = dbUser.cfHandle;
           u.role = dbUser.role;
           u.needsCfLink = !dbUser.cfHandle;
@@ -77,15 +94,20 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async signIn({ user, account }) {
-      if (account?.provider === "discord" && account.providerAccountId) {
-        const existingUser = await prisma.user.findUnique({
-          where: { discordId: account.providerAccountId },
-        });
+      const provider = account?.provider as OAuthProvider | undefined;
+      if (provider && provider in OAUTH_ID_FIELD && account?.providerAccountId) {
+        const idField = OAUTH_ID_FIELD[provider];
+        const avatarField = OAUTH_AVATAR_FIELD[provider];
+
+        const existingUser =
+          provider === "discord"
+            ? await prisma.user.findUnique({ where: { discordId: account.providerAccountId } })
+            : await prisma.user.findUnique({ where: { githubId: account.providerAccountId } });
 
         if (existingUser) {
           await prisma.user.update({
             where: { id: existingUser.id },
-            data: { discordAvatar: user.image },
+            data: { [avatarField]: user.image },
           });
           (user as SessionUser).id = existingUser.id;
           return true;
@@ -101,11 +123,11 @@ export const authOptions: NextAuthOptions = {
 
         const newUser = await prisma.user.create({
           data: {
-            email: account.providerAccountId + "@discord",
+            email: account.providerAccountId + "@" + provider,
             username,
             displayName: user.name || username,
-            discordId: account.providerAccountId,
-            discordAvatar: user.image,
+            [idField]: account.providerAccountId,
+            [avatarField]: user.image,
             avatarUrl: user.image,
             cfHandle: "pending-" + account.providerAccountId,
             emailVerified: true,
