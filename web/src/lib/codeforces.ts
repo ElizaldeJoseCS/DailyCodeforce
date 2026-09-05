@@ -301,15 +301,28 @@ function processText(raw: string): string {
 
 export async function scrapeProblemStatement(
   contestId: number,
-  index: string
+  index: string,
+  attempts = 3
 ): Promise<ProblemStatement | null> {
   const { load } = await import("cheerio");
   const url = `https://codeforces.com/problemset/problem/${contestId}/${index}`;
-  const res = await fetch(url, {
-    headers: { "User-Agent": "DailyCodeforceBot/1.0" },
-  });
-  if (!res.ok) return null;
-  const html = await res.text();
+
+  let html: string | null = null;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      const res = await fetch(url, {
+        headers: { "User-Agent": "DailyCodeforceBot/1.0" },
+      });
+      if (res.ok) {
+        html = await res.text();
+        break;
+      }
+    } catch {
+      // transient network error — fall through to retry
+    }
+    if (attempt < attempts) await new Promise((r) => setTimeout(r, 2000 * attempt));
+  }
+  if (!html) return null;
   const $ = load(html);
 
   const problemDiv = $("div.problem-statement");

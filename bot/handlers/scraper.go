@@ -33,19 +33,7 @@ var (
 	scrapeCacheMu sync.RWMutex
 )
 
-func ScrapeProblem(contestID int, index string) (*ProblemStatement, error) {
-	key := fmt.Sprintf("%d%s", contestID, index)
-
-	scrapeCacheMu.RLock()
-	if cached, ok := scrapeCache[key]; ok {
-		scrapeCacheMu.RUnlock()
-		return cached, nil
-	}
-	scrapeCacheMu.RUnlock()
-
-	url := fmt.Sprintf("https://codeforces.com/problemset/problem/%d/%s", contestID, index)
-
-	client := &http.Client{Timeout: 15 * time.Second}
+func fetchProblemPage(client *http.Client, url string) ([]byte, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
@@ -65,6 +53,38 @@ func ScrapeProblem(contestID int, index string) (*ProblemStatement, error) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("read body: %w", err)
+	}
+	return body, nil
+}
+
+func ScrapeProblem(contestID int, index string) (*ProblemStatement, error) {
+	key := fmt.Sprintf("%d%s", contestID, index)
+
+	scrapeCacheMu.RLock()
+	if cached, ok := scrapeCache[key]; ok {
+		scrapeCacheMu.RUnlock()
+		return cached, nil
+	}
+	scrapeCacheMu.RUnlock()
+
+	url := fmt.Sprintf("https://codeforces.com/problemset/problem/%d/%s", contestID, index)
+
+	client := &http.Client{Timeout: 15 * time.Second}
+
+	const attempts = 3
+	var body []byte
+	var lastErr error
+	for attempt := 1; attempt <= attempts; attempt++ {
+		body, lastErr = fetchProblemPage(client, url)
+		if lastErr == nil {
+			break
+		}
+		if attempt < attempts {
+			time.Sleep(time.Duration(attempt) * 2 * time.Second)
+		}
+	}
+	if lastErr != nil {
+		return nil, lastErr
 	}
 
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
