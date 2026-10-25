@@ -61,11 +61,13 @@ async function callGemini(
         }),
       }
     );
-    if (res.status === 429) {
+    // 429 (rate limited) and 503 (model overloaded) are both transient —
+    // back off and retry instead of falling straight through to paid Haiku.
+    if (res.status === 429 || res.status === 503) {
       const wait = attempt * 30;
-      console.warn(`  Gemini rate limited, waiting ${wait}s (attempt ${attempt}/${retries})...`);
+      console.warn(`  Gemini ${res.status}, waiting ${wait}s (attempt ${attempt}/${retries})...`);
       await new Promise((r) => setTimeout(r, wait * 1000));
-      lastError = new Error(`Gemini 429: rate limited`);
+      lastError = new Error(`Gemini ${res.status}: ${res.status === 429 ? "rate limited" : "overloaded"}`);
       continue;
     }
     if (!res.ok) {
@@ -409,11 +411,14 @@ const REQUIRED_SECTIONS = ["## Intuition", "## Approach", "## Complexity", "## S
 // Matches raw LaTeX that renders as literal text on this site (no math
 // renderer): $...$ inline math, or common LaTeX control sequences like
 // \frac, \le, a_i subscripts, etc. Checked against prose only (code blocks
-// stripped first) so legitimate uses of $ or \ inside C++ source don't trip it.
-const LATEX_RE = /\$[^$\n]{1,120}\$|\\(?:frac|le|ge|leq|geq|times|dots|ldots|cdot|sum|sqrt|in|neq|pmod|binom|lfloor|rfloor|lceil|rceil)\b|[A-Za-z]_\{?[A-Za-z0-9]/;
+// and inline `code` stripped first) so legitimate uses of $ or \ inside C++
+// source don't trip it. The subscript branch only matches a standalone
+// single-letter base (a_i, x_1, a_{i+1}) — snake_case identifiers like
+// prefix_sum or min_heap in prose used to match and reject every attempt.
+const LATEX_RE = /\$[^$\n]{1,120}\$|\\(?:frac|le|ge|leq|geq|times|dots|ldots|cdot|sum|sqrt|in|neq|pmod|binom|lfloor|rfloor|lceil|rceil)\b|\b[A-Za-z]_(?:\{[^}\n]{1,20}\}|[A-Za-z0-9]\b)/;
 
 function stripCodeBlocks(markdown: string): string {
-  return markdown.replace(/```[\s\S]*?```/g, "");
+  return markdown.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "");
 }
 
 // Cheap, objective checks that don't require running anything: did the model
@@ -593,6 +598,19 @@ export async function validateSolution(
   }
 }
 
+// Problems with a special checker ("if there are multiple answers, print any")
+// or an interactive judge have no single correct output, so the sample outputs
+// aren't ground truth: a correct solution that prints a different valid answer
+// fails token comparison on every attempt and the editorial never gets saved.
+const MULTI_ANSWER_RE = /(?:multiple|several|many) (?:possible |valid |correct |optimal )?(?:answers|solutions)|(?:print|output) any\b/i;
+
+function hasUniqueAnswer(tags: string[], statement?: ProblemStatement | null): boolean {
+  if (tags.some((t) => t.toLowerCase() === "interactive")) return false;
+  if (!statement) return true;
+  const text = [statement.statement, statement.outputSpec, statement.note].filter(Boolean).join("\n");
+  return !MULTI_ANSWER_RE.test(text);
+}
+
 const MAX_RETRIES = 3;
 
 export async function generateValidatedEditorial(
@@ -604,10 +622,15 @@ export async function generateValidatedEditorial(
   statement?: ProblemStatement | null,
   testCases?: { input: string; output: string }[]
 ): Promise<{ editorial: string | null; validated: boolean }> {
+  const checkOutputs = hasUniqueAnswer(tags, statement);
+  if (!checkOutputs) {
+    console.log(`  ℹ️  multiple valid answers or interactive — sample outputs aren't ground truth, compile-checking only`);
+  }
+
   // Generate extra validation test cases (only if CF test cases are sparse)
   let extraTestCases: { input: string; output: string }[] = [];
   const cfTestCount = testCases?.length || 0;
-  if (statement && statement.examples.length > 0 && cfTestCount < 3) {
+  if (checkOutputs && statement && statement.examples.length > 0 && cfTestCount < 3) {
     extraTestCases = await generateExtraTestCases(problemName, statement);
   }
 
@@ -619,7 +642,7 @@ export async function generateValidatedEditorial(
 
   // Deduplicate by input
   const seen = new Set<string>();
-  const validationTestCases = allTestCases.filter((tc) => {
+  const validationTestCases = !checkOutputs ? [] : allTestCases.filter((tc) => {
     const key = tc.input.trim();
     if (seen.has(key)) return false;
     seen.add(key);

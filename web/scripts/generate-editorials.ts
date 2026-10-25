@@ -38,26 +38,39 @@ const prisma = new PrismaClient({ adapter });
 async function generateEditorials() {
   const todayOnly = process.argv.includes("--today");
   const doClear = process.argv.includes("--clear");
+  // --days N: only problems from the last N days (including today). Used by
+  // the daily cron so a problem whose editorial failed today gets retried on
+  // the next few runs instead of being abandoned once the date rolls over.
+  const daysIdx = process.argv.indexOf("--days");
+  const recentDays = daysIdx !== -1 ? parseInt(process.argv[daysIdx + 1], 10) : NaN;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let dateFilter: Date | { gte: Date } | undefined;
+  if (todayOnly) {
+    dateFilter = today;
+  } else if (Number.isFinite(recentDays) && recentDays > 0) {
+    const since = new Date(today);
+    since.setDate(since.getDate() - (recentDays - 1));
+    dateFilter = { gte: since };
+  }
 
   if (doClear) {
-    await prisma.dailyProblem.updateMany({
+    const { count } = await prisma.dailyProblem.updateMany({
+      where: dateFilter ? { date: dateFilter } : {},
       data: { editorial: null },
     });
-    console.log("Cleared all editorials");
+    console.log(`Cleared ${count} editorials`);
   }
 
-  const where: { editorial: null; date?: Date } = { editorial: null };
-  if (todayOnly) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    where.date = today;
-  }
+  const where: { editorial: null; date?: Date | { gte: Date } } = { editorial: null };
+  if (dateFilter) where.date = dateFilter;
 
   const missing = await prisma.dailyProblem.findMany({
     where,
     include: { problem: true },
     orderBy: { date: "desc" },
-    ...(todayOnly ? {} : { take: 10 }),
+    ...(dateFilter ? {} : { take: 10 }),
   });
 
   if (missing.length === 0) {
@@ -90,7 +103,7 @@ async function generateEditorials() {
       );
 
       if (editorial === null) {
-        console.log(`❌ ${p.name} (failed structural checks or known-answer validation after all retries — leaving unset, will retry on a future run)`);
+        console.log(`❌ ${p.name} (failed structural checks or known-answer validation after all retries — leaving unset, the cron retries it on later runs while it's within the --days window)`);
         await new Promise((r) => setTimeout(r, 2000));
         continue;
       }
@@ -103,7 +116,7 @@ async function generateEditorials() {
       if (validated) {
         console.log(`✅ ${p.name} (validated against ${testCases?.length ?? 0}+ test cases)`);
       } else {
-        console.log(`➖ ${p.name} (no test cases available, unvalidated)`);
+        console.log(`➖ ${p.name} (unvalidated: compile-checked only — no test cases, or a multiple-valid-answer/interactive problem)`);
       }
       await new Promise((r) => setTimeout(r, 2000));
     } catch (err) {
