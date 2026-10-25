@@ -1,7 +1,17 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { ProblemStatement } from "./codeforces";
 
-const GEMINI_MODEL = "gemini-3.6-flash";
+// Free-tier quota is 20 requests/day *per model*, so each extra model here is
+// another 20 free requests before falling back to paid Haiku. Tried in order;
+// a model that's out of quota, overloaded, or hangs is skipped for the next.
+const GEMINI_MODELS = [
+  "gemini-3.6-flash",
+  "gemini-3.8-flash",
+  "gemini-3.7-flash",
+  "gemini-3.5-flash",
+  "gemini-3.5-flash-lite",
+];
+const GEMINI_TIMEOUT_MS = 180_000;
 const HAIKU_MODEL = "claude-haiku-4-5-20251001";
 const CLAUDE_DISABLED = process.env.CLAUDE_DISABLED === "1";
 
@@ -30,17 +40,19 @@ interface LLMResponse {
 interface RawLLMResult {
   text: string;
   truncated: boolean;
+  model?: string;
 }
 
-async function callGemini(
+// Models whose daily quota is used up — no point asking again this run.
+const exhaustedGeminiModels = new Set<string>();
+
+async function callGeminiModel(
+  model: string,
   systemPrompt: string,
   userContent: string,
   maxTokens: number,
   retries = 3
 ): Promise<RawLLMResult> {
-  if (!getGeminiKey()) {
-    throw new Error("No GEMINI_API_KEY configured");
-  }
   let lastError: Error | null = null;
   for (let attempt = 1; attempt <= retries; attempt++) {
     const res = await fetch(
@@ -52,36 +64,64 @@ async function callGemini(
           Authorization: `Bearer ${getGeminiKey()}`,
         },
         body: JSON.stringify({
-          model: GEMINI_MODEL,
+          model,
           max_tokens: maxTokens,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userContent },
           ],
         }),
+        signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
       }
     );
-    // 429 (rate limited) and 503 (model overloaded) are both transient —
-    // back off and retry instead of falling straight through to paid Haiku.
     if (res.status === 429 || res.status === 503) {
+      const body = await res.text();
+      // A per-day quota won't reset for hours — waiting is pointless, move
+      // straight on to the next model instead.
+      if (res.status === 429 && body.includes("PerDay")) {
+        exhaustedGeminiModels.add(model);
+        throw new Error(`${model} 429: daily quota exhausted`);
+      }
+      // Per-minute rate limit or overloaded — transient, back off and retry.
       const wait = attempt * 30;
-      console.warn(`  Gemini ${res.status}, waiting ${wait}s (attempt ${attempt}/${retries})...`);
+      console.warn(`  ${model} ${res.status}, waiting ${wait}s (attempt ${attempt}/${retries})...`);
       await new Promise((r) => setTimeout(r, wait * 1000));
-      lastError = new Error(`Gemini ${res.status}: ${res.status === 429 ? "rate limited" : "overloaded"}`);
+      lastError = new Error(`${model} ${res.status}: ${res.status === 429 ? "rate limited" : "overloaded"}`);
       continue;
     }
     if (!res.ok) {
       const body = await res.text();
-      throw new Error(`Gemini ${res.status}: ${body.slice(0, 200)}`);
+      throw new Error(`${model} ${res.status}: ${body.slice(0, 200)}`);
     }
     const data = await res.json();
     const text = data.choices?.[0]?.message?.content || "";
     if (text.length === 0) {
-      throw new Error("Gemini returned empty response");
+      throw new Error(`${model} returned empty response`);
     }
-    return { text, truncated: data.choices?.[0]?.finish_reason === "length" };
+    return { text, truncated: data.choices?.[0]?.finish_reason === "length", model };
   }
-  throw lastError || new Error("Gemini failed after retries");
+  throw lastError || new Error(`${model} failed after retries`);
+}
+
+async function callGemini(
+  systemPrompt: string,
+  userContent: string,
+  maxTokens: number
+): Promise<RawLLMResult> {
+  if (!getGeminiKey()) {
+    throw new Error("No GEMINI_API_KEY configured");
+  }
+  let lastError: Error | null = null;
+  for (const model of GEMINI_MODELS) {
+    if (exhaustedGeminiModels.has(model)) continue;
+    try {
+      return await callGeminiModel(model, systemPrompt, userContent, maxTokens);
+    } catch (err) {
+      lastError = err as Error;
+      console.warn(`  ${lastError.message} — trying next Gemini model`);
+    }
+  }
+  throw lastError || new Error("All Gemini models are out of quota");
 }
 
 async function callHaiku(
@@ -112,11 +152,11 @@ async function callLLM(
   userContent: string,
   maxTokens: number
 ): Promise<LLMResponse> {
-  // Always try Gemini first (free)
+  // Always try the Gemini models first (free)
   if (getGeminiKey()) {
     try {
-      const { text, truncated } = await callGemini(systemPrompt, userContent, maxTokens);
-      return { text, truncated, provider: "gemini" };
+      const { text, truncated, model } = await callGemini(systemPrompt, userContent, maxTokens);
+      return { text, truncated, provider: model ?? "gemini" };
     } catch (err) {
       console.error(`Gemini failed: ${err}`);
     }
@@ -144,8 +184,8 @@ async function callGeminiOnly(
     return { text: "", truncated: false, provider: "none" };
   }
   try {
-    const { text, truncated } = await callGemini(systemPrompt, userContent, maxTokens);
-    return { text, truncated, provider: "gemini" };
+    const { text, truncated, model } = await callGemini(systemPrompt, userContent, maxTokens);
+    return { text, truncated, provider: model ?? "gemini" };
   } catch (err) {
     console.error(`Gemini failed (no fallback): ${err}`);
     return { text: "", truncated: false, provider: "none" };
