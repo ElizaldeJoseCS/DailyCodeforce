@@ -51,6 +51,7 @@ async function callGeminiModel(
   systemPrompt: string,
   userContent: string,
   maxTokens: number,
+  isLastModel: boolean,
   retries = 3
 ): Promise<RawLLMResult> {
   let lastError: Error | null = null;
@@ -82,7 +83,13 @@ async function callGeminiModel(
         exhaustedGeminiModels.add(model);
         throw new Error(`${model} 429: daily quota exhausted`);
       }
-      // Per-minute rate limit or overloaded — transient, back off and retry.
+      // Overloaded — another model is likely free right now, so switch
+      // instead of waiting. Only the last model left backs off, since the
+      // alternative there is paid Haiku.
+      if (res.status === 503 && !isLastModel) {
+        throw new Error(`${model} 503: overloaded`);
+      }
+      // Per-minute rate limit (or last model overloaded) — back off and retry.
       const wait = attempt * 30;
       console.warn(`  ${model} ${res.status}, waiting ${wait}s (attempt ${attempt}/${retries})...`);
       await new Promise((r) => setTimeout(r, wait * 1000));
@@ -114,8 +121,10 @@ async function callGemini(
   let lastError: Error | null = null;
   for (const model of GEMINI_MODELS) {
     if (exhaustedGeminiModels.has(model)) continue;
+    const remaining = GEMINI_MODELS.filter((m) => !exhaustedGeminiModels.has(m));
+    const isLastModel = model === remaining[remaining.length - 1];
     try {
-      return await callGeminiModel(model, systemPrompt, userContent, maxTokens);
+      return await callGeminiModel(model, systemPrompt, userContent, maxTokens, isLastModel);
     } catch (err) {
       lastError = err as Error;
       console.warn(`  ${lastError.message} — trying next Gemini model`);
