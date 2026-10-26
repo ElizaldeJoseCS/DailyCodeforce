@@ -17,6 +17,7 @@ import {
   BookOpen,
   Flag,
   GripVertical,
+  Lightbulb,
 } from "lucide-react";
 import Markdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
@@ -25,6 +26,7 @@ import SubmitClient from "./SubmitClient";
 import ReportModal from "./ReportModal";
 import Discussion from "./Discussion";
 import { DEFAULT_CODE } from "@/lib/defaultCppCode";
+import { editorialHints } from "@/lib/editorialHints";
 
 const CppEditor = dynamic(() => import("./CppEditor"), {
   ssr: false,
@@ -157,6 +159,22 @@ function RatingBadge({ rating }: { rating: number }) {
   );
 }
 
+function EditorialMarkdown({ children }: { children: string }) {
+  return (
+    <div className="prose prose-sm prose-invert max-w-none">
+      <Markdown
+        rehypePlugins={[rehypeHighlight]}
+        components={{
+          pre: ({ children }) => <>{children}</>,
+          code: CodeBlock,
+        }}
+      >
+        {children}
+      </Markdown>
+    </div>
+  );
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function CodeBlock({ children, className, ...props }: any) {
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -217,7 +235,10 @@ export default function ProblemPageClient({
   isVerified: boolean;
 }) {
   const { data: session } = useSession();
-  const [showAnswer, setShowAnswer] = useState(false);
+  // Progressive reveal: hints first (Intuition, then Approach), then the
+  // full editorial with code. Resets whenever the Editorial tab is reopened.
+  const [hintsShown, setHintsShown] = useState(0);
+  const [showFull, setShowFull] = useState(false);
   const [leftTab, setLeftTab] = useState<"description" | "editorial">("description");
   const [solved, setSolved] = useState(initialSolved);
   const [verified, setVerified] = useState(initialVerified);
@@ -438,7 +459,7 @@ export default function ProblemPageClient({
               Description
             </button>
             <button
-              onClick={() => { setLeftTab("editorial"); setShowAnswer(false); }}
+              onClick={() => { setLeftTab("editorial"); setHintsShown(0); setShowFull(false); }}
               className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold transition-colors ${
                 leftTab === "editorial" ? "xp-tab-active" : "xp-tab"
               }`}
@@ -538,62 +559,97 @@ export default function ProblemPageClient({
               </>
             )}
 
-            {leftTab === "editorial" && (
-              <>
-                <button
-                  onClick={() => setShowAnswer(!showAnswer)}
-                  className="w-full flex items-center justify-between px-4 py-3 mb-4 rounded-sm border border-gray-200 dark:border-gray-800 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    {showAnswer ? (
-                      <EyeOff className="w-4 h-4 text-gray-400" />
-                    ) : (
-                      <Eye className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
-                    )}
-                    <span className="text-sm font-medium">
-                      {showAnswer ? "Hide Editorial" : "Show Editorial"}
-                    </span>
-                  </div>
-                  <span className="text-xs text-gray-400 dark:text-gray-500">
-                    {showAnswer ? "Click to hide" : "Click to reveal"}
-                  </span>
-                </button>
+            {leftTab === "editorial" && (() => {
+              if (!daily.editorial) {
+                return (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    The editorial for this problem isn&apos;t ready yet — check back soon.
+                  </p>
+                );
+              }
+              const hints = editorialHints(daily.editorial);
+              const nextHint = !showFull && hintsShown < hints.length ? hints[hintsShown] : null;
+              const revealButton =
+                "w-full flex items-center justify-between px-4 py-3 rounded-sm border border-gray-200 dark:border-gray-800 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors";
+              return (
+                <>
+                  {!showFull &&
+                    hints.slice(0, hintsShown).map((hint, i) => (
+                      <div
+                        key={hint.label}
+                        className="mb-4 rounded-sm border border-amber-500/30 bg-amber-500/5 px-4 py-3"
+                      >
+                        <div className="flex items-center gap-2 mb-2 text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                          <Lightbulb className="w-3.5 h-3.5" />
+                          Hint {i + 1} · {hint.label}
+                        </div>
+                        <EditorialMarkdown>{hint.body}</EditorialMarkdown>
+                      </div>
+                    ))}
 
-                {showAnswer && daily.editorial && (
-                  <div>
-                    <div className="prose prose-sm prose-invert max-w-none">
-                      <Markdown
-                        rehypePlugins={[rehypeHighlight]}
-                        components={{
-                          pre: ({ children }) => <>{children}</>,
-                          code: CodeBlock,
-                        }}
-                      >
-                        {daily.editorial}
-                      </Markdown>
-                    </div>
-                    <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
-                      <a
-                        href={daily.problem.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        View on Codeforces
-                      </a>
-                      <button
-                        onClick={() => setReportOpen(true)}
-                        className="inline-flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-red-400 dark:hover:text-red-400 transition-colors"
-                      >
-                        <Flag className="w-3 h-3" />
-                        Report issue
+                  {!showFull && (
+                    <div className="space-y-2 mb-4">
+                      {nextHint && (
+                        <button onClick={() => setHintsShown(hintsShown + 1)} className={revealButton}>
+                          <div className="flex items-center gap-2">
+                            <Lightbulb className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                            <span className="text-sm font-medium">
+                              Show hint {hintsShown + 1}: {nextHint.label}
+                            </span>
+                          </div>
+                          <span className="text-xs text-gray-400 dark:text-gray-500">
+                            {hintsShown + 1} of {hints.length}
+                          </span>
+                        </button>
+                      )}
+                      <button onClick={() => setShowFull(true)} className={revealButton}>
+                        <div className="flex items-center gap-2">
+                          <Eye className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
+                          <span className="text-sm font-medium">Show full solution</span>
+                        </div>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">
+                          {nextHint ? "Skips remaining hints" : "Editorial + C++ code"}
+                        </span>
                       </button>
                     </div>
-                  </div>
-                )}
-              </>
-            )}
+                  )}
+
+                  {(showFull || hintsShown > 0) && (
+                    <button
+                      onClick={() => { setHintsShown(0); setShowFull(false); }}
+                      className="inline-flex items-center gap-1.5 mb-4 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                    >
+                      <EyeOff className="w-3.5 h-3.5" />
+                      Hide everything
+                    </button>
+                  )}
+
+                  {showFull && (
+                    <div>
+                      <EditorialMarkdown>{daily.editorial}</EditorialMarkdown>
+                      <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
+                        <a
+                          href={daily.problem.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          View on Codeforces
+                        </a>
+                        <button
+                          onClick={() => setReportOpen(true)}
+                          className="inline-flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-red-400 dark:hover:text-red-400 transition-colors"
+                        >
+                          <Flag className="w-3 h-3" />
+                          Report issue
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
 
