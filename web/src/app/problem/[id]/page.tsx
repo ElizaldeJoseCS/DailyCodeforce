@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/db";
@@ -5,8 +7,40 @@ import { Prisma } from "@/generated/prisma/client";
 import { authOptions } from "@/lib/auth";
 import { scrapeProblemStatement, ProblemStatement } from "@/lib/codeforces";
 import ProblemPageClient from "@/components/ProblemPageClient";
+import { pageMetadata, editorialSnippet } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
+
+// Deduped per request, so generateMetadata and the page share one query.
+const getDailyProblem = cache((id: string) =>
+  prisma.dailyProblem.findUnique({
+    where: { id },
+    include: { problem: true },
+  })
+);
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const daily = await getDailyProblem(id);
+  if (!daily) return { title: "Problem not found" };
+
+  const { cfContestId, cfIndex, name, rating, tags } = daily.problem;
+  const code = `${cfContestId}${cfIndex}`;
+  const fallback = `Codeforces ${code} ${name} (rated ${rating}${tags.length ? `; ${tags.slice(0, 3).join(", ")}` : ""}): problem statement, ${daily.editorial ? "step-by-step editorial, and C++ solution" : "and an online C++ judge"}.`;
+
+  return pageMetadata({
+    title: daily.editorial
+      ? `Codeforces ${code} – ${name}: Editorial & C++ Solution`
+      : `Codeforces ${code} – ${name}`,
+    description: (daily.editorial && editorialSnippet(daily.editorial)) || fallback,
+    path: `/problem/${daily.id}`,
+    type: "article",
+  });
+}
 
 export default async function ProblemPage({
   params,
@@ -15,10 +49,7 @@ export default async function ProblemPage({
 }) {
   const { id } = await params;
 
-  const daily = await prisma.dailyProblem.findUnique({
-    where: { id },
-    include: { problem: true },
-  });
+  const daily = await getDailyProblem(id);
 
   if (!daily) notFound();
 

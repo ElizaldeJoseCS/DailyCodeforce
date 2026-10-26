@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/site";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/db";
@@ -5,6 +7,13 @@ import { TIERS, TIER_ORDER } from "@/lib/tiers";
 import { tierColor, ratingColor } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = pageMetadata({
+  title: "Archive – Past Daily Codeforces Problems",
+  description:
+    "Every past DailyCodeforce problem set, by date and difficulty tier, each with a step-by-step editorial and C++ solution.",
+  path: "/archive",
+});
 
 async function getArchive() {
   const problems = await prisma.dailyProblem.findMany({

@@ -1,9 +1,13 @@
+import type { Metadata } from "next";
+import { pageMetadata, SITE_DESCRIPTION } from "@/lib/site";
 import Link from "next/link";
 import { ExternalLink, ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { TIERS, TIER_ORDER, type Tier } from "@/lib/tiers";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = pageMetadata({ description: SITE_DESCRIPTION, path: "/" });
 
 type DailyEntry = {
   tier: Tier;

@@ -1,8 +1,17 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/site";
 import { ArrowLeft, Flame } from "lucide-react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = pageMetadata({
+  title: "Leaderboard – Top Codeforces Practice Streaks",
+  description:
+    "DailyCodeforce leaderboard: the longest daily Codeforces practice streaks and most problems solved.",
+  path: "/leaderboard",
+});
 
 async function getLeaderboard() {
   const users = await prisma.user.findMany({
